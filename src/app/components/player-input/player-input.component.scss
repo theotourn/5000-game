@@ -1,0 +1,96 @@
+.game-container {
+  .bg-secondary {
+    background-color: #2e2e2e; /* Mesma cor do estilo principal */
+  }
+
+  .bg-dark {
+    background-color: #1a1a1a; /* Fundo escuro para a área central */
+  }
+
+  .text-white {
+    color: #fff;
+  }
+
+  .title {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
+  .player-count {
+    .btn-group {
+      display: flex;
+      gap: 15px; /* Espaçamento entre botões */
+
+      .btn {
+        padding: 10px 20px;
+        font-size: 1.2rem;
+        border-radius: 10px;
+        transition: 0.3s;
+        border: none; /* Remover bordas extras */
+
+        /* Cor padrão: dourado escuro */
+        background-color: #e7d002;
+        color: rgb(0, 0, 0);
+
+        /* Hover para botões não selecionados */
+        &:hover {
+          background-color: #a59400; /* Dourado mais claro e vibrante */
+          transform: scale(1.1);
+        }
+
+        /* Botão selecionado */
+        &.btn-success {
+          background-color: #7a700e; /* Dourado vivo */
+          border-color: #6e6300; /* Realce em dourado claro */
+        }
+
+        /* Hover para botão selecionado */
+        &.btn-success:hover {
+          background-color: #6e6300;
+          transform: scale(1.1);
+        }
+      }
+    }
+  }
+
+  .player-names {
+    .input-group {
+      display: flex;
+      align-items: center;
+
+      .input-group-text {
+        background-color: #2e2e2e;
+        color: #fff;
+        font-weight: bold;
+      }
+
+      .form-control {
+        border: none;
+        border-radius: 5px;
+        padding: 10px;
+      }
+    }
+  }
+
+  .rules {
+    h4 {
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    ul {
+      list-style-type: disc;
+      padding-left: 20px;
+
+      li {
+        margin-bottom: 10px;
+        font-size: 1rem;
+
+        ul {
+          list-style-type: circle;
+          padding-left: 15px;
+        }
+      }
+    }
+  }
+}

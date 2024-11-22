@@ -1,0 +1,196 @@
+.game-container {
+  .score-board {
+    background-color: #2e2e2e;
+
+    h3 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .list-group-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: none;
+      padding: 15px;
+      font-size: 1.2rem;
+
+      &.current-player {
+        background-color: #ffc107; /* Destaque para o jogador atual */
+        color: #000;
+        font-weight: bold;
+      }
+    }
+  }
+
+  .dice-area {
+    min-height: 300px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+
+    .dice {
+      width: 80px;
+      height: 80px;
+      opacity: 1; /* Padrão: totalmente visível */
+      transition: opacity 0.3s ease; /* Suaviza as mudanças de opacidade */
+    }
+
+    .fade-out {
+      opacity: 0; /* Gradualmente desaparece */
+    }
+
+    .fade-in {
+      opacity: 0; /* Inicialmente invisível */
+      animation: fadeIn 0.3s forwards; /* Gradualmente aparece */
+    }
+
+    .spin-animation {
+      animation: spin 2s ease-in-out;
+    }
+  }
+
+  .button-area {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+
+    .btn {
+      width: 200px;
+      padding: 15px;
+      font-size: 1.2rem;
+      border-radius: 10px;
+
+      &:hover {
+        transform: scale(1.1);
+        transition: 0.3s;
+      }
+    }
+  }
+
+  .saved-dice {
+    background-color: #2e2e2e;
+
+    h3 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .saved-dice-area {
+      min-height: 300px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      .dice {
+        width: 80px;
+        height: 80px;
+        opacity: 1; /* Padrão: totalmente visível */
+        transition: opacity 0.3s ease; /* Suaviza as mudanças de opacidade */
+      }
+
+      .fade-out {
+        opacity: 0; /* Gradualmente desaparece */
+      }
+
+      .fade-in {
+        opacity: 0; /* Inicialmente invisível */
+        animation: fadeIn 0.3s forwards; /* Gradualmente aparece */
+      }
+    }
+  }
+}
+
+/* Animação para girar os dados */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(90deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  75% {
+    transform: rotate(270deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animação de fade-in */
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Estilo do botão flutuante para abrir o Offcanvas */
+button[data-bs-toggle="offcanvas"] {
+  background-color: #ffffff; /* Cor de fundo dourada escura */
+  color: #0e5fca;
+  border: none;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1050; /* Garante que o botão fique acima de outros elementos */
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #8b8b8b; /* Cor dourada clara ao passar o mouse */
+    color: #ffffff;
+  }
+
+  i {
+    font-size: 1.8rem;
+  }
+}
+
+/* Estilo do Offcanvas */
+.offcanvas {
+  width: 400px;
+}
+
+.offcanvas-header {
+  background-color: #a5a5a5; /* Cor mais clara para o cabeçalho */
+  color: #333; /* Texto escuro para contraste suave */
+  border-bottom: 1px solid #a0a0a0; /* Limite sutil em cinza claro */
+}
+
+.offcanvas-body {
+  background-color: #b4b4b4; /* Fundo cinza claro para o corpo */
+  color: #333; /* Texto preto para boa legibilidade */
+  font-size: 1.1rem;
+  padding: 20px;
+}
+
+.offcanvas-body ul {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+.offcanvas-body li {
+  margin-bottom: 10px;
+}
+
+.offcanvas-body li ul {
+  list-style-type: circle;
+  padding-left: 15px;
+}
+
+.offcanvas-body .mb-4 {
+  margin-bottom: 20px;
+}
+
+  

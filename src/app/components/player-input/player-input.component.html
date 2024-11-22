@@ -1,0 +1,105 @@
+<div class="game-container vh-100 d-flex flex-row">
+  <!-- Coluna da Esquerda (Título do Jogo) -->
+  <div
+    class="col-3 p-3 bg-secondary text-white d-flex flex-column justify-content-center align-items-center"
+  >
+    <h1 class="title text-center mb-3">
+      <i class="fas fa-dice"></i> 5 Mil! <i class="fas fa-dice"></i>
+    </h1>
+    <p class="lead text-center">
+      Prepare-se para jogar o emocionante 5 Mil!
+    </p>
+  </div>
+
+  <!-- Coluna Central (Seleção de Jogadores) -->
+  <div
+    class="col-6 bg-dark text-white d-flex flex-column justify-content-center align-items-center p-4"
+  >
+    <!-- Seleção de número de jogadores -->
+    <div class="player-count mb-4 text-center">
+      <p class="lead">Selecione o número de jogadores:</p>
+      <div class="btn-group" role="group">
+        <button
+          *ngFor="let count of [2, 3, 4, 5, 6]"
+          class="btn btn-lg btn"
+          [class.btn-success]="playerCount === count"
+          (click)="onPlayerCountChange(count)"
+        >
+          {{ count }} Jogadores
+        </button>
+      </div>
+    </div>
+
+    <!-- Campos para os nomes dos jogadores -->
+    <div class="player-names mt-4 w-100">
+      <div
+        *ngFor="let player of players; let i = index; trackBy: trackByIndex"
+        class="input-group mb-3"
+      >
+        <span class="input-group-text">Jogador {{ i + 1 }}</span>
+        <input
+          [(ngModel)]="players[i]"
+          type="text"
+          class="form-control"
+          placeholder="Nome do jogador {{ i + 1 }}"
+        />
+      </div>
+    </div>
+
+    <!-- Botão para iniciar o jogo -->
+    <div class="text-center mt-4">
+      <button class="btn btn-lg btn-success" (click)="startGame()">Começar Jogo</button>
+    </div>
+  </div>
+
+  <!-- Coluna da Direita (Regras do Jogo) -->
+  <div
+    class="col-3 p-3 bg-secondary text-white d-flex flex-column justify-content-center align-items-center"
+  >
+    <h4 class="text-center fw-bold mb-3">Regras do Jogo:</h4>
+    <ul>
+      <li class="mb-4">
+        <strong>Objetivo:</strong> O jogador precisa acumular 5000 pontos exatos
+        para vencer.
+      </li>
+      <li class="mb-4">
+        <strong>Pontuação dos Dados:</strong>
+        <ul>
+          <li><strong>1</strong> vale 100 pontos.</li>
+          <li><strong>5</strong> vale 50 pontos.</li>
+          <li><strong>Sequência</strong> de 1-5 ou 2-6 vale 750 pontos.</li>
+          <li>
+            <strong>Trinca</strong> de qualquer número: valor do número vezes
+            100.
+          </li>
+          <li>
+            <strong>Quadrupla</strong> de qualquer número: valor do número vezes
+            200.
+          </li>
+          <li>
+            <strong>Quintupla</strong> de qualquer número: valor do número vezes
+            1000.
+          </li>
+          <li>
+            <strong>Trinca de 1</strong> vale 1000 pontos,
+            <strong>Quadrupla de 1</strong> vale 2000 pontos e
+            <strong>Quintupla de 1</strong> vale 5000 pontos.
+          </li>
+        </ul>
+      </li>
+      <li>
+        <strong>Regras adicionais:</strong>
+        <ul>
+          <li>
+            Se você passar de 5000 pontos, você perde os pontos dessa rodada.
+          </li>
+          <li>
+            Para pontuar pela primeira vez, é necessário marcar no mínimo 500
+            pontos.
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+

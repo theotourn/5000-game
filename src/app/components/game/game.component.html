@@ -1,0 +1,139 @@
+<div class="game-container vh-100 d-flex flex-row">
+  <!-- Coluna da Esquerda (Tabela de Pontuação) -->
+  <div
+    class="col-3 p-3 score-board bg-secondary text-white d-flex flex-column justify-content-between"
+  >
+    <h2 class="text-center">Tabela de pontos</h2>
+    <ul class="list-group list-group-flush">
+      <li
+        *ngFor="let player of players; let i = index"
+        [class.current-player]="currentPlayer === i"
+        class="list-group-item bg-secondary text-white"
+      >
+        <span class="fs-3 ">{{ player }}</span>
+        <span class="fs-3">{{ scores[i] }} pontos</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Coluna Central (Jogo Principal) -->
+  <div
+    class="col-6 bg-dark d-flex flex-column justify-content-between align-items-center p-3 text-white"
+  >
+    <h1 class="text-center">
+      Turno de
+      <span class="fw-bolder text-danger">{{ players[currentPlayer] }}</span>
+    </h1>
+    <div class="dice-area d-flex justify-content-center align-items-center">
+      <img
+        *ngFor="let die of remainingDice; let i = index"
+        [src]="die === 0 ? 'dice-roll.png' : 'dice-' + die + '.png'"
+        alt="Dado"
+        class="dice"
+        [class.spin-animation]="die === 0"
+        [class.fade-in]="fadeInDice"
+        [class.fade-out]="fadeOutDice"
+      />
+    </div>
+    <div class="button-area">
+      <button class="btn btn-lg btn-warning me-3 fw-bold" (click)="rollDice()">
+        Rolar Dados
+      </button>
+      <button class="btn btn-lg btn-primary fw-bolder" (click)="keepScore()">
+        Encerrar a Rodada!
+      </button>
+    </div>
+  </div>
+
+  <!-- Coluna da Direita (Dados Guardados) -->
+  <div
+    class="col-3 p-3 saved-dice bg-secondary text-white d-flex flex-column justify-content-between"
+  >
+    <h3 class="fs-2">
+      Pontuação na rodada
+      <br><span class="fw-bolder text-warning" style="font-size: 50px;">{{ roundScore }}</span>
+    </h3>
+    <div class="saved-dice-area d-flex justify-content-center flex-wrap">
+      <img
+        *ngFor="let die of usedDice"
+        [src]="'dice-' + die + '.png'"
+        alt="Dado Guardado"
+        class="dice fade-in"
+      />
+    </div>
+  </div>
+</div>
+
+<!-- Botão para abrir o Offcanvas -->
+<button
+  class="btn btn-warning rounded-circle position-fixed bottom-0 end-0 m-3"
+  data-bs-toggle="offcanvas"
+  data-bs-target="#rulesOffcanvas"
+  aria-controls="rulesOffcanvas"
+>
+  <i class="fas fa-book"></i>
+  <!-- Ícone de manual -->
+</button>
+
+<!-- Offcanvas com as regras -->
+<div
+  class="offcanvas offcanvas-end bg-secondary text-white"
+  tabindex="-1"
+  id="rulesOffcanvas"
+  aria-labelledby="rulesOffcanvasLabel"
+>
+  <div class="offcanvas-header">
+    <h5 id="rulesOffcanvasLabel" class="fw-bold">Regras do Jogo</h5>
+    <button
+      type="button"
+      class="btn-close text-reset"
+      data-bs-dismiss="offcanvas"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="offcanvas-body">
+    <ul>
+      <li class="mb-4">
+        <strong>Objetivo:</strong> O jogador precisa acumular 5000 pontos exatos
+        para vencer.
+      </li>
+      <li class="mb-4">
+        <strong>Pontuação dos Dados:</strong>
+        <ul>
+          <li><strong>1</strong> vale 100 pontos.</li>
+          <li><strong>5</strong> vale 50 pontos.</li>
+          <li><strong>Sequência</strong> de 1-5 ou 2-6 vale 750 pontos.</li>
+          <li>
+            <strong>Trinca</strong> de qualquer número: valor do número vezes
+            100.
+          </li>
+          <li>
+            <strong>Quadrupla</strong> de qualquer número: valor do número vezes
+            200.
+          </li>
+          <li>
+            <strong>Quintupla</strong> de qualquer número: valor do número vezes
+            1000.
+          </li>
+          <li>
+            <strong>Trinca de 1</strong> vale 1000 pontos,
+            <strong>Quadrupla de 1</strong> vale 2000 pontos e
+            <strong>Quintupla de 1</strong> vale 5000 pontos.
+          </li>
+        </ul>
+      </li>
+      <li>
+        <strong>Regras adicionais:</strong>
+        <ul>
+          <li>
+            Se você passar de 5000 pontos, você perde os pontos dessa rodada.
+          </li>
+          <li>
+            Para pontuar pela primeira vez, é necessário marcar no mínimo 500
+            pontos.
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
