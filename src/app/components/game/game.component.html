@@ -1,139 +1,425 @@
-<div class="game-container vh-100 d-flex flex-row">
-  <!-- Coluna da Esquerda (Tabela de Pontuação) -->
-  <div
-    class="col-3 p-3 score-board bg-secondary text-white d-flex flex-column justify-content-between"
-  >
-    <h2 class="text-center">Tabela de pontos</h2>
-    <ul class="list-group list-group-flush">
-      <li
-        *ngFor="let player of players; let i = index"
-        [class.current-player]="currentPlayer === i"
-        class="list-group-item bg-secondary text-white"
+<!-- Fundo Hipnótico Swirl & Overlay CRT Suave -->
+<div class="balatro-plasma-bg"></div>
+<div class="crt-overlay" *ngIf="crtFilterEnabled"></div>
+
+<div class="balatro-game-container min-vh-100 d-flex flex-column justify-content-between">
+  
+  <!-- ================= TOP HUD: BALATRO STYLE ================= -->
+  <header class="balatro-hud px-3 py-2 px-md-4 d-flex justify-content-between align-items-center">
+    <!-- Brand -->
+    <div class="d-flex align-items-center gap-2 cursor-pointer" (click)="exitToLobby()" title="Sair para o Menu">
+      <div class="balatro-chip chip-yellow fs-5">
+        <i class="fas fa-dice"></i>
+      </div>
+      <div>
+        <h2 class="hud-brand font-pixel m-0">5 MIL!</h2>
+        <span class="hud-sub text-white-50">JOGO DOS 5000</span>
+      </div>
+    </div>
+
+    <!-- Active Player Card -->
+    <div class="balatro-card-light px-3 py-1 d-flex align-items-center gap-3">
+      <div class="player-joker-badge">
+        <i class="fas" [ngClass]="players[currentPlayer] ? players[currentPlayer].avatar : 'fa-skull'"></i>
+      </div>
+      <div class="text-start">
+        <div class="text-uppercase small fw-bold text-dark font-pixel" style="font-size: 0.8rem;">TURNO DE</div>
+        <div class="player-turn-name font-pixel fs-4 text-dark">
+          {{ players[currentPlayer] ? players[currentPlayer].name : '' }}
+        </div>
+      </div>
+      <div class="border-start border-2 border-dark ps-3 d-none d-sm-block">
+        <div class="small text-dark fw-bold font-pixel" style="font-size: 0.8rem;">BLIND / META</div>
+        <div class="fw-bold fs-5 text-dark font-pixel">{{ targetScore }} PTS</div>
+      </div>
+    </div>
+
+    <!-- Utility Controls (CRT, Audio, Rules, Exit) -->
+    <div class="d-flex align-items-center gap-2">
+      <!-- Toggle CRT -->
+      <button
+        class="btn-balatro btn-balatro-blue py-1 px-3 fs-6"
+        (click)="toggleCrt()"
+        [title]="'Filtro CRT: ' + (crtFilterEnabled ? 'LIGADO' : 'DESLIGADO')"
       >
-        <span class="fs-3 ">{{ player }}</span>
-        <span class="fs-3">{{ scores[i] }} pontos</span>
-      </li>
-    </ul>
-  </div>
-
-  <!-- Coluna Central (Jogo Principal) -->
-  <div
-    class="col-6 bg-dark d-flex flex-column justify-content-between align-items-center p-3 text-white"
-  >
-    <h1 class="text-center">
-      Turno de
-      <span class="fw-bolder text-danger">{{ players[currentPlayer] }}</span>
-    </h1>
-    <div class="dice-area d-flex justify-content-center align-items-center">
-      <img
-        *ngFor="let die of remainingDice; let i = index"
-        [src]="die === 0 ? 'dice-roll.png' : 'dice-' + die + '.png'"
-        alt="Dado"
-        class="dice"
-        [class.spin-animation]="die === 0"
-        [class.fade-in]="fadeInDice"
-        [class.fade-out]="fadeOutDice"
-      />
-    </div>
-    <div class="button-area">
-      <button class="btn btn-lg btn-warning me-3 fw-bold" (click)="rollDice()">
-        Rolar Dados
+        <i class="fas fa-tv me-1"></i> {{ crtFilterEnabled ? 'CRT: ON' : 'CRT: OFF' }}
       </button>
-      <button class="btn btn-lg btn-primary fw-bolder" (click)="keepScore()">
-        Encerrar a Rodada!
+
+      <!-- Toggle Pixel Art Filter -->
+      <button
+        class="btn-balatro btn-balatro-purple py-1 px-3 fs-6"
+        (click)="togglePixel()"
+        [title]="'Filtro Pixel: ' + (pixelFilterEnabled ? 'LIGADO' : 'DESLIGADO')"
+      >
+        <i class="fas fa-cubes me-1"></i> {{ pixelFilterEnabled ? 'PIXEL: ON' : 'PIXEL: OFF' }}
+      </button>
+
+      <!-- Toggle Sound -->
+      <button
+        class="btn-balatro btn-balatro-yellow py-1 px-3 fs-6"
+        (click)="soundService.toggleMute()"
+        [title]="soundService.muted ? 'Ativar Som' : 'Silenciar'"
+      >
+        <i class="fas" [ngClass]="soundService.muted ? 'fa-volume-xmark text-danger' : 'fa-volume-high'"></i>
+      </button>
+
+      <!-- Rules Guide -->
+      <button
+        class="btn-balatro btn-balatro-green py-1 px-3 fs-6"
+        (click)="showRulesModal = true"
+        title="Tabela de Combinações"
+      >
+        <i class="fas fa-book-open me-1"></i> REGRAS
+      </button>
+
+      <!-- Exit Button -->
+      <button
+        class="btn-balatro btn-balatro-red py-1 px-3 fs-6"
+        (click)="exitToLobby()"
+        title="Menu Inicial"
+      >
+        <i class="fas fa-arrow-right-from-bracket"></i>
       </button>
     </div>
-  </div>
+  </header>
 
-  <!-- Coluna da Direita (Dados Guardados) -->
-  <div
-    class="col-3 p-3 saved-dice bg-secondary text-white d-flex flex-column justify-content-between"
-  >
-    <h3 class="fs-2">
-      Pontuação na rodada
-      <br><span class="fw-bolder text-warning" style="font-size: 50px;">{{ roundScore }}</span>
-    </h3>
-    <div class="saved-dice-area d-flex justify-content-center flex-wrap">
-      <img
-        *ngFor="let die of usedDice"
-        [src]="'dice-' + die + '.png'"
-        alt="Dado Guardado"
-        class="dice fade-in"
-      />
+  <!-- ================= ÁREA DE JOGO PRINCIPAL ================= -->
+  <main class="container-fluid flex-grow-1 p-2 p-md-3">
+    <div class="row h-100 g-3">
+
+      <!-- ================= COLUNA ESQUERDA: PLACAR DOS JOGADORES ================= -->
+      <div class="col-12 col-lg-3 col-xl-2 order-2 order-lg-1">
+        <div class="balatro-card p-3 h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-dark">
+              <h3 class="font-pixel fs-5 text-warning m-0">
+                <i class="fas fa-trophy me-1"></i> PLACAR
+              </h3>
+              <span class="balatro-chip chip-yellow py-0 px-2 fs-6">{{ players.length }}P</span>
+            </div>
+
+            <!-- Lista de Cartas de Jogador com Alto Contraste -->
+            <div class="d-flex flex-column gap-2">
+              <div
+                *ngFor="let player of players; let i = index"
+                class="balatro-player-tab p-2 rounded-2"
+                [class.active-player-card]="currentPlayer === i"
+              >
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="joker-tab-icon">
+                      <i class="fas" [ngClass]="player.avatar"></i>
+                    </span>
+                    <span class="fw-bold player-tab-name text-white text-truncate" style="max-width: 105px;">
+                      {{ player.name }}
+                    </span>
+                  </div>
+                  <span class="font-pixel fs-4" [class.text-warning]="currentPlayer === i" [class.text-white]="currentPlayer !== i">
+                    {{ scores[i] }}
+                  </span>
+                </div>
+
+                <!-- Barra de Progresso até a Meta -->
+                <div class="progress balatro-progress" style="height: 6px;">
+                  <div
+                    class="progress-bar"
+                    [style.width.%]="(scores[i] / targetScore) * 100"
+                    [class.bg-warning]="currentPlayer === i"
+                    [class.bg-info]="currentPlayer !== i"
+                  ></div>
+                </div>
+
+                <!-- Status com Alto Contraste -->
+                <div class="d-flex justify-content-between align-items-center mt-1 font-pixel" style="font-size: 0.85rem;">
+                  <span *ngIf="scores[i] === 0" class="text-danger fw-bold">
+                    <i class="fas fa-lock me-1"></i> &lt; 500 PTS
+                  </span>
+                  <span *ngIf="scores[i] > 0" class="text-success fw-bold">
+                    <i class="fas fa-check me-1"></i> NA MESA
+                  </span>
+                  <span class="text-light fw-bold">FALTAM {{ targetScore - scores[i] }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center pt-2 font-pixel text-light small border-top border-dark">
+            TARGET: <strong class="text-warning">{{ targetScore }} PTS</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= COLUNA CENTRAL: MESA 3D TABLETOP (TOP-DOWN) ================= -->
+      <div class="col-12 col-lg-6 col-xl-7 order-1 order-lg-2 d-flex flex-column">
+        <div class="tabletop-stage flex-grow-1 position-relative">
+          
+          <!-- Banner Pop Balatro (Zilch, Hot Dice, Warnings) -->
+          <div
+            *ngIf="bannerNotice"
+            class="balatro-banner-overlay"
+            [ngClass]="'banner-' + bannerNotice.type"
+          >
+            <div class="balatro-card p-3 text-center">
+              <h2 class="font-pixel fs-2 m-0 text-white">{{ bannerNotice.title }}</h2>
+              <p class="font-pixel fs-5 text-warning m-0">{{ bannerNotice.subtitle }}</p>
+              <button class="btn-balatro btn-balatro-yellow py-1 px-3 fs-6 mt-2" (click)="closeBanner()">
+                CONTINUAR
+              </button>
+            </div>
+          </div>
+
+          <!-- Canvas Three.js Top-Down -->
+          <app-dice-board-3d
+            [selectedIndices]="selectedIndices"
+            [eligibleIndices]="scoringIndices"
+            [pixelFilterEnabled]="pixelFilterEnabled"
+            (diceClicked)="onDiceClicked($event)"
+            (rollStarted)="onRollStarted()"
+            (rollFinished)="onRollFinished($event)"
+          ></app-dice-board-3d>
+        </div>
+
+        <!-- Barra Inferior da Mesa 3D com Altura 100% Fixa (66px) - Previne expansão do layout da tela -->
+        <div class="tabletop-bottom-bar mt-2 p-2 balatro-card d-flex justify-content-center align-items-center">
+          <!-- Estado 1: Rolando -->
+          <div *ngIf="isRolling" class="text-center font-pixel fs-5 text-warning d-flex align-items-center justify-content-center">
+            <i class="fas fa-dice fa-spin me-2 fs-4"></i> DADOS EM MOVIMENTO NA MESA...
+          </div>
+
+          <!-- Estado 2: Dados na mesa pós-rolagem -->
+          <div *ngIf="!isRolling && currentRoll.length > 0" class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+            <span class="font-pixel fs-5 text-warning me-2 text-uppercase">DADOS NA MESA:</span>
+            <button
+              *ngFor="let val of currentRoll; let i = index"
+              class="balatro-die-card"
+              [class.card-selected]="selectedIndices.includes(i)"
+              [class.card-eligible]="scoringIndices.includes(i)"
+              [disabled]="isRolling"
+              (click)="onDiceClicked(i)"
+              [title]="selectedIndices.includes(i) ? 'Dado marcado para pontuar' : (scoringIndices.includes(i) ? 'Clique para marcar' : 'Dado não pontuador')"
+            >
+              <span class="die-card-val" [class.val-red]="val === 1">{{ val }}</span>
+              <span class="card-check-badge" *ngIf="selectedIndices.includes(i)">
+                <i class="fas fa-check"></i>
+              </span>
+              <span class="card-ineligible-badge" *ngIf="!scoringIndices.includes(i)">
+                <i class="fas fa-ban"></i>
+              </span>
+            </button>
+          </div>
+
+          <!-- Estado 3: Flutuando / Aguardando início do arremesso -->
+          <div *ngIf="!isRolling && currentRoll.length === 0" class="text-center font-pixel fs-6 text-light d-flex align-items-center justify-content-center gap-2">
+            <i class="fas fa-hand-pointer text-warning"></i>
+            <span>CLIQUE E ARRASTE OS DADOS PARA ARREMESSAR NA MESA</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= COLUNA DIREITA: SCORE DA RODADA & AÇÕES ================= -->
+      <div class="col-12 col-lg-3 col-xl-3 order-3 order-lg-3">
+        <div class="balatro-card p-3 p-md-3 h-100 right-action-panel">
+          
+          <div class="d-flex flex-column gap-2 info-cards-stack">
+            <!-- Pontuação da Rodada Estilo Balatro Chips/Score -->
+            <div class="balatro-card-light p-3 text-center round-score-box">
+              <span class="balatro-chip chip-yellow py-0 px-2 small mb-1">TOTAL DA RODADA</span>
+              <div class="round-huge-score font-pixel text-danger">
+                {{ totalPotentialScore }}
+              </div>
+              <div class="font-pixel text-dark fw-bold fs-6">
+                {{ roundAccumulatedScore }} FIXOS + {{ isSelectionValid ? currentSelectionScore : 0 }} SELECIONADOS
+              </div>
+            </div>
+
+            <!-- Combinações Selecionadas com Altura Fixa Rígida (Sem Layout Shift) -->
+            <div class="balatro-card p-3 combos-box">
+              <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-1 mb-2">
+                <span class="font-pixel fs-5 text-warning">COMBINAÇÕES:</span>
+                <span class="balatro-chip" [ngClass]="isSelectionValid ? 'chip-green' : 'chip-red'">
+                  {{ isSelectionValid ? '+' + currentSelectionScore + ' PTS' : 'INVÁLIDO' }}
+                </span>
+              </div>
+
+              <div class="fixed-combos-list">
+                <div *ngIf="selectionBreakdown.length > 0" class="d-flex flex-column gap-1">
+                  <div *ngFor="let combo of selectionBreakdown" class="font-pixel fs-5 text-white d-flex align-items-center gap-1 text-truncate">
+                    <i class="fas fa-caret-right text-warning"></i> {{ combo }}
+                  </div>
+                </div>
+                <div *ngIf="selectionBreakdown.length === 0" class="text-light fw-bold font-pixel small py-1 text-center">
+                  {{ isRolling ? 'Aguardando parada dos dados...' : 'Clique nos dados para marcar.' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Dados Guardados (Locked) com Altura Fixa Rígida -->
+            <div class="balatro-card p-3 locked-box">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="font-pixel fs-5 text-warning">
+                  <i class="fas fa-lock me-1"></i> GUARDADOS
+                </span>
+                <span class="balatro-chip chip-blue py-0 px-2 fs-6">
+                  {{ lockedDice.length }} / 5
+                </span>
+              </div>
+
+              <div class="fixed-locked-list">
+                <div
+                  *ngFor="let val of lockedDice"
+                  class="balatro-chip chip-yellow py-1 px-3 fs-4"
+                  [class.chip-red]="val === 1"
+                >
+                  {{ val }}
+                </div>
+                <div *ngIf="lockedDice.length === 0" class="text-light fw-bold font-pixel small w-100 text-center py-1">
+                  Nenhum dado guardado.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTÕES DE AÇÃO BALATRO COM SLOTS TOTALMENTE FIXOS (NUNCA MUDAM DE LUGAR) -->
+          <div class="action-buttons-deck">
+            
+            <!-- Slot 1: Lançar / Arremessar Dados (Altura Fixa: 52px) -->
+            <div class="action-btn-slot slot-primary">
+              <button
+                class="btn-balatro btn-balatro-yellow fs-5 w-100 h-100"
+                [disabled]="isRolling || (!isDiceFloating && hasRolledThisTurn && !canRollAgain)"
+                (click)="rollDice()"
+              >
+                <i class="fas fa-dice fs-4 me-2" [class.fa-spin]="isRolling"></i>
+                <span>
+                  {{ isDiceFloating ? ('LANÇAR ' + remainingDiceCount + ' DADOS') : ('ARREMESSAR + ' + (remainingDiceCount - selectedIndices.length) + ' DADOS') }}
+                </span>
+              </button>
+            </div>
+
+            <!-- Slot 2: Bancar / Garantir Pontos (Altura Fixa: 52px) -->
+            <div class="action-btn-slot slot-primary">
+              <button
+                class="btn-balatro btn-balatro-green fs-5 w-100 h-100"
+                [disabled]="isRolling || !canBankScore"
+                (click)="bankScore()"
+              >
+                <i class="fas fa-check-double fs-4 me-2"></i>
+                <span>GARANTIR +{{ totalPotentialScore }} PTS</span>
+              </button>
+            </div>
+
+            <!-- Slot 3: Desistir da rodada caso < 500 pts (Slot Reservado Fixo de 38px: NUNCA desloca os botões acima) -->
+            <div class="action-btn-slot slot-secondary">
+              <button
+                class="btn-balatro btn-balatro-red fs-6 w-100 h-100"
+                [style.visibility]="(isFirstTimeScoring && hasRolledThisTurn && totalPotentialScore < 500 && !isRolling) ? 'visible' : 'hidden'"
+                [attr.aria-hidden]="!(isFirstTimeScoring && hasRolledThisTurn && totalPotentialScore < 500 && !isRolling)"
+                (click)="forfeitTurn()"
+              >
+                <i class="fas fa-forward me-1"></i> PASSAR VEZ (&lt;500 PTS)
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ================= MODAL DE VITÓRIA BALATRO ================= -->
+  <div class="balatro-modal-backdrop d-flex align-items-center justify-content-center p-3" *ngIf="winner">
+    <div class="balatro-card p-4 p-md-5 text-center" style="max-width: 520px; width: 100%;">
+      <div class="mb-3">
+        <i class="fas fa-crown text-warning display-1"></i>
+      </div>
+
+      <span class="balatro-chip chip-yellow fs-4 mb-2">PARTIDA VENCIDA!</span>
+
+      <h1 class="winner-title font-pixel text-white mt-2 mb-1 display-4">
+        {{ winner.name }}
+      </h1>
+
+      <p class="font-pixel fs-2 text-warning mb-4">
+        CRAVOU {{ winner.score }} PONTOS!
+      </p>
+
+      <div class="d-flex justify-content-center gap-3">
+        <button class="btn-balatro btn-balatro-yellow px-4 py-3 fs-4" (click)="restartGame()">
+          <i class="fas fa-rotate-left me-1"></i> NOVO JOGO
+        </button>
+        <button class="btn-balatro btn-balatro-blue px-4 py-3 fs-5" (click)="exitToLobby()">
+          <i class="fas fa-users-gear me-1"></i> MENU
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Botão para abrir o Offcanvas -->
-<button
-  class="btn btn-warning rounded-circle position-fixed bottom-0 end-0 m-3"
-  data-bs-toggle="offcanvas"
-  data-bs-target="#rulesOffcanvas"
-  aria-controls="rulesOffcanvas"
->
-  <i class="fas fa-book"></i>
-  <!-- Ícone de manual -->
-</button>
+  <!-- ================= MODAL DE REGRAS BALATRO ================= -->
+  <div class="balatro-modal-backdrop d-flex align-items-center justify-content-center p-3" *ngIf="showRulesModal">
+    <div class="balatro-card p-4" style="max-width: 680px; width: 100%;">
+      <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-2 mb-3">
+        <h3 class="font-pixel fs-3 text-warning m-0">
+          <i class="fas fa-book-open me-2"></i> GUIA DE REGRAS: 5 MIL!
+        </h3>
+        <button class="btn-balatro btn-balatro-red py-1 px-3 fs-6" (click)="showRulesModal = false">
+          FECHAR
+        </button>
+      </div>
 
-<!-- Offcanvas com as regras -->
-<div
-  class="offcanvas offcanvas-end bg-secondary text-white"
-  tabindex="-1"
-  id="rulesOffcanvas"
-  aria-labelledby="rulesOffcanvasLabel"
->
-  <div class="offcanvas-header">
-    <h5 id="rulesOffcanvasLabel" class="fw-bold">Regras do Jogo</h5>
-    <button
-      type="button"
-      class="btn-close text-reset"
-      data-bs-dismiss="offcanvas"
-      aria-label="Close"
-    ></button>
-  </div>
-  <div class="offcanvas-body">
-    <ul>
-      <li class="mb-4">
-        <strong>Objetivo:</strong> O jogador precisa acumular 5000 pontos exatos
-        para vencer.
-      </li>
-      <li class="mb-4">
-        <strong>Pontuação dos Dados:</strong>
-        <ul>
-          <li><strong>1</strong> vale 100 pontos.</li>
-          <li><strong>5</strong> vale 50 pontos.</li>
-          <li><strong>Sequência</strong> de 1-5 ou 2-6 vale 750 pontos.</li>
-          <li>
-            <strong>Trinca</strong> de qualquer número: valor do número vezes
-            100.
-          </li>
-          <li>
-            <strong>Quadrupla</strong> de qualquer número: valor do número vezes
-            200.
-          </li>
-          <li>
-            <strong>Quintupla</strong> de qualquer número: valor do número vezes
-            1000.
-          </li>
-          <li>
-            <strong>Trinca de 1</strong> vale 1000 pontos,
-            <strong>Quadrupla de 1</strong> vale 2000 pontos e
-            <strong>Quintupla de 1</strong> vale 5000 pontos.
-          </li>
+      <div class="rules-scrollable pe-2" style="max-height: 60vh; overflow-y: auto;">
+        <h4 class="font-pixel fs-5 text-white">OBJETIVO:</h4>
+        <p class="font-pixel fs-5 text-white-50">
+          Seja o primeiro competidor a somar exatamente <strong>{{ targetScore }} pontos</strong>. Se passar da meta, estourou e perde os pontos da rodada!
+        </p>
+
+        <h4 class="font-pixel fs-5 text-white mt-3">COMBINAÇÕES DE PONTOS:</h4>
+        <div class="balatro-card-light p-3 text-dark font-pixel fs-5">
+          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+            <span>DADO 1 (ÁS AVULSO)</span>
+            <span class="text-danger fw-bold">+100 PTS CADA</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+            <span>DADO 5 (CINCO AVULSO)</span>
+            <span class="text-primary fw-bold">+50 PTS CADA</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+            <span>SEQUÊNCIA (1-5 OU 2-6)</span>
+            <span class="text-success fw-bold">+750 PTS</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+            <span>TRINCA DE 1S (1-1-1)</span>
+            <span class="text-danger fw-bold">+1.000 PTS</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+            <span>TRINCA DE 2, 3, 4, 5, 6</span>
+            <span class="fw-bold">NÚMERO x 100</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+            <span>QUÁDRUPLA (4 IGUAIS)</span>
+            <span class="fw-bold">DOBRO DA TRINCA</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span>QUÍNTUPLA (5 IGUAIS)</span>
+            <span class="fw-bold">10x A TRINCA</span>
+          </div>
+        </div>
+
+        <h4 class="font-pixel fs-5 text-white mt-3">MECÂNICAS ESPECIAIS:</h4>
+        <ul class="font-pixel fs-5 text-white-50 ps-3">
+          <li><strong>MÃO QUENTE (HOT DICE):</strong> Guardou todos os 5 dados? Você ganha os 5 dados de volta para arremessar e continuar acumulando!</li>
+          <li><strong>ABRIR A CONTA:</strong> É necessário atingir ao menos 500 pontos em uma única rodada para que sua pontuação comece a valer no placar.</li>
+          <li><strong>ZILCH / FARKLE:</strong> Rolou e nenhum dado pontuou? Perde tudo da rodada e passa a vez!</li>
         </ul>
-      </li>
-      <li>
-        <strong>Regras adicionais:</strong>
-        <ul>
-          <li>
-            Se você passar de 5000 pontos, você perde os pontos dessa rodada.
-          </li>
-          <li>
-            Para pontuar pela primeira vez, é necessário marcar no mínimo 500
-            pontos.
-          </li>
-        </ul>
-      </li>
-    </ul>
+      </div>
+
+      <div class="text-end pt-3 border-top border-dark mt-3">
+        <button class="btn-balatro btn-balatro-yellow px-4 fs-5" (click)="showRulesModal = false">
+          ENTENDIDO!
+        </button>
+      </div>
+    </div>
   </div>
+
 </div>

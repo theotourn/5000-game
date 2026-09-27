@@ -1,0 +1,259 @@
+/* ==========================================================
+   5 MIL! - BALATRO STYLE (2026 INDIE ROGUELIKE ARCADE THEME)
+   ========================================================== */
+
+:root {
+  /* Fontes nítidas e 100% legíveis com suporte completo a caracteres em português */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-pixel: 'Space Grotesk', sans-serif;
+  --font-modern: 'Space Grotesk', sans-serif;
+
+  /* Cores Balatro de Alto Contraste */
+  --balatro-bg-1: #0f1c24;
+  --balatro-bg-2: #1e1124;
+  --balatro-red: #fe4a49;
+  --balatro-blue: #0096c7;
+  --balatro-yellow: #ffb703;
+  --balatro-orange: #fb8500;
+  --balatro-green: #2ec4b6;
+  --balatro-purple: #7209b7;
+  
+  --balatro-card-bg: #fdfbf7;
+  --balatro-dark-card: #141b22;
+  
+  --balatro-border: #000000;
+  --balatro-shadow: 4px 4px 0px #000000;
+  --balatro-shadow-lg: 6px 6px 0px #000000;
+
+  /* Textos de altíssimo contraste */
+  --text-primary: #ffffff;
+  --text-secondary: #f8fafc;
+  --text-accent: #ffd166;
+
+  /* Redefinição do Bootstrap 5 para tema escuro e textos de alto contraste */
+  --bs-secondary-color: #f1f5f9 !important;
+  --bs-secondary-color-rgb: 241, 245, 249 !important;
+  --bs-tertiary-color: #e2e8f0 !important;
+  --bs-body-color: #ffffff !important;
+  --bs-body-color-rgb: 255, 255, 255 !important;
+  --bs-secondary-bg: #0096c7 !important;
+  --bs-secondary-border-subtle: rgba(255, 255, 255, 0.4) !important;
+}
+
+[data-bs-theme="dark"], body {
+  --bs-secondary-color: #f1f5f9 !important;
+  --bs-secondary-color-rgb: 241, 245, 249 !important;
+  --bs-tertiary-color: #e2e8f0 !important;
+  --bs-body-color: #ffffff !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-modern);
+  background: #090e13;
+  color: var(--text-primary);
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fundo Hipnótico Animado (Balatro Swirl Plasma Suave) */
+.balatro-plasma-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 50%, #13241b 0%, #141021 50%, #08090d 100%);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: repeating-radial-gradient(
+      circle at 50% 50%,
+      rgba(254, 74, 73, 0.05) 0px,
+      rgba(0, 150, 199, 0.05) 50px,
+      rgba(46, 196, 182, 0.05) 100px,
+      rgba(255, 183, 3, 0.05) 150px
+    );
+    animation: swirlRotate 45s linear infinite;
+    pointer-events: none;
+  }
+}
+
+@keyframes swirlRotate {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Filtro CRT & Scanlines Suave */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.12) 50%
+  );
+  background-size: 100% 3px;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.4);
+}
+
+.font-pixel {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* Cartas e Painéis Estilo Balatro */
+.balatro-card {
+  background: var(--balatro-dark-card);
+  border: 3px solid var(--balatro-border);
+  border-radius: 12px;
+  box-shadow: var(--balatro-shadow);
+  color: var(--text-primary);
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.balatro-card-light {
+  background: var(--balatro-card-bg);
+  border: 3px solid var(--balatro-border);
+  border-radius: 12px;
+  box-shadow: var(--balatro-shadow);
+  color: #111;
+  position: relative;
+}
+
+/* Botões Estilo Balatro (Chunky, Pop, Sombras Offset Duras) */
+.btn-balatro {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 24px;
+  border: 3px solid var(--balatro-border);
+  border-radius: 10px;
+  box-shadow: var(--balatro-shadow);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--balatro-shadow-lg);
+  }
+
+  &:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0px #000;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
+  }
+
+  &.btn-balatro-red {
+    background: var(--balatro-red);
+    color: #fff;
+  }
+
+  &.btn-balatro-yellow {
+    background: var(--balatro-yellow);
+    color: #000;
+  }
+
+  &.btn-balatro-blue {
+    background: var(--balatro-blue);
+    color: #fff;
+  }
+
+  &.btn-balatro-green {
+    background: var(--balatro-green);
+    color: #000;
+  }
+
+  &.btn-balatro-purple {
+    background: var(--balatro-purple);
+    color: #fff;
+  }
+}
+
+/* Badges estilo Ficha / Chip do Balatro */
+.balatro-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 2px solid var(--balatro-border);
+  box-shadow: 2px 2px 0px #000;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1rem;
+
+  &.chip-red { background: var(--balatro-red); color: #fff; }
+  &.chip-blue { background: var(--balatro-blue); color: #fff; }
+  &.chip-yellow { background: var(--balatro-yellow); color: #000; }
+  &.chip-green { background: var(--balatro-green); color: #000; }
+}
+
+/* CORREÇÃO GLOBAL DEFINITIVA PARA TEXT-MUTED E CORES SECUNDÁRIAS */
+:root, [data-bs-theme="dark"], body, html {
+  --bs-secondary-color: #f1f5f9 !important;
+  --bs-secondary-color-rgb: 241, 245, 249 !important;
+  --bs-tertiary-color: #e2e8f0 !important;
+  --bs-body-color: #ffffff !important;
+  --bs-body-color-rgb: 255, 255, 255 !important;
+  --bs-secondary-bg: #0096c7 !important;
+  --bs-secondary-border-subtle: rgba(255, 255, 255, 0.35) !important;
+}
+
+.text-muted, .text-secondary, .text-white-50, [class*="text-muted"], [class*="text-secondary"] {
+  --bs-text-opacity: 1 !important;
+  color: #f1f5f9 !important;
+  opacity: 1 !important;
+}
+
+.bg-secondary {
+  background-color: #0096c7 !important;
+}
+
+.border-secondary {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Scrollbar retrô */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--balatro-yellow);
+  border: 2px solid #000;
+  border-radius: 4px;
+}

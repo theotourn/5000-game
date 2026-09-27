@@ -1,105 +1,200 @@
-<div class="game-container vh-100 d-flex flex-row">
-  <!-- Coluna da Esquerda (Título do Jogo) -->
-  <div
-    class="col-3 p-3 bg-secondary text-white d-flex flex-column justify-content-center align-items-center"
-  >
-    <h1 class="title text-center mb-3">
-      <i class="fas fa-dice"></i> 5 Mil! <i class="fas fa-dice"></i>
-    </h1>
-    <p class="lead text-center">
-      Prepare-se para jogar o emocionante 5 Mil!
-    </p>
-  </div>
+<!-- Fundo Hipnótico Swirl & Overlay CRT -->
+<div class="balatro-plasma-bg"></div>
+<div class="crt-overlay" *ngIf="crtFilterEnabled"></div>
 
-  <!-- Coluna Central (Seleção de Jogadores) -->
-  <div
-    class="col-6 bg-dark text-white d-flex flex-column justify-content-center align-items-center p-4"
-  >
-    <!-- Seleção de número de jogadores -->
-    <div class="player-count mb-4 text-center">
-      <p class="lead">Selecione o número de jogadores:</p>
-      <div class="btn-group" role="group">
-        <button
-          *ngFor="let count of [2, 3, 4, 5, 6]"
-          class="btn btn-lg btn"
-          [class.btn-success]="playerCount === count"
-          (click)="onPlayerCountChange(count)"
-        >
-          {{ count }} Jogadores
-        </button>
+<div class="balatro-lobby min-vh-100 d-flex flex-column justify-content-between p-3 p-md-4">
+  
+  <!-- Header Arcade -->
+  <header class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-2">
+      <div class="balatro-chip chip-yellow fs-4">
+        <i class="fas fa-dice"></i>
+      </div>
+      <div>
+        <h1 class="logo-title font-pixel m-0">5 MIL!</h1>
+        <div class="logo-subtitle text-uppercase">ROGUELIKE DICE &bull; 2026 EDITION</div>
       </div>
     </div>
 
-    <!-- Campos para os nomes dos jogadores -->
-    <div class="player-names mt-4 w-100">
-      <div
-        *ngFor="let player of players; let i = index; trackBy: trackByIndex"
-        class="input-group mb-3"
+    <div class="d-flex gap-2">
+      <!-- Toggle CRT -->
+      <button
+        class="btn-balatro btn-balatro-blue py-2 px-3 fs-6"
+        (click)="toggleCrt()"
+        [title]="'Filtro CRT: ' + (crtFilterEnabled ? 'LIGADO' : 'DESLIGADO')"
       >
-        <span class="input-group-text">Jogador {{ i + 1 }}</span>
-        <input
-          [(ngModel)]="players[i]"
-          type="text"
-          class="form-control"
-          placeholder="Nome do jogador {{ i + 1 }}"
-        />
+        <i class="fas fa-tv me-1"></i> CRT: {{ crtFilterEnabled ? 'ON' : 'OFF' }}
+      </button>
+
+      <!-- Toggle Som -->
+      <button
+        class="btn-balatro btn-balatro-yellow py-2 px-3 fs-6"
+        (click)="soundService.toggleMute()"
+        [title]="soundService.muted ? 'Ativar Áudio' : 'Mutar Áudio'"
+      >
+        <i class="fas" [ngClass]="soundService.muted ? 'fa-volume-xmark text-danger' : 'fa-volume-high'"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Container Principal estilo Balatro Run Setup -->
+  <main class="container my-auto">
+    <div class="row g-4 justify-content-center align-items-stretch">
+      
+      <!-- Coluna de Configuração da Partida -->
+      <div class="col-12 col-lg-7">
+        <div class="balatro-card p-4 p-md-5 h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="text-center mb-4">
+              <span class="balatro-chip chip-red mb-2">NOVA PARTIDA</span>
+              <h2 class="font-pixel fs-1 text-white m-0">CONFIGURAR MESA</h2>
+            </div>
+
+            <!-- Seleção de Quantidade de Jogadores -->
+            <div class="mb-4">
+              <div class="text-uppercase small fw-bold text-warning mb-2 text-center font-pixel fs-5">
+                Quantidade de Competidores
+              </div>
+              <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <button
+                  *ngFor="let count of [2, 3, 4, 5, 6]"
+                  class="btn-balatro count-btn"
+                  [class.active-count]="playerCount === count"
+                  (click)="setPlayerCount(count)"
+                >
+                  {{ count }}P
+                </button>
+              </div>
+            </div>
+
+            <!-- Meta de Pontuação (Blind/Target) -->
+            <div class="mb-4">
+              <div class="text-uppercase small fw-bold text-warning mb-2 text-center font-pixel fs-5">
+                Pontuação Alvo (Blind)
+              </div>
+              <div class="d-flex justify-content-center gap-2">
+                <button
+                  class="btn-balatro target-btn"
+                  [class.active-target]="targetScore === 3000"
+                  (click)="setTargetScore(3000)"
+                >
+                  3.000 <span class="d-block small text-warning">Rápida</span>
+                </button>
+                <button
+                  class="btn-balatro target-btn"
+                  [class.active-target]="targetScore === 5000"
+                  (click)="setTargetScore(5000)"
+                >
+                  5.000 <span class="d-block small text-warning">Padrão</span>
+                </button>
+                <button
+                  class="btn-balatro target-btn"
+                  [class.active-target]="targetScore === 10000"
+                  (click)="setTargetScore(10000)"
+                >
+                  10.000 <span class="d-block small text-warning">Maratona</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de Jogadores Estilo Cartas Balatro -->
+            <div class="players-deck mb-4">
+              <div
+                *ngFor="let player of players; let i = index"
+                class="player-slot-card d-flex align-items-center gap-3 p-2 mb-2 rounded-2"
+              >
+                <!-- Avatar / Joker Icon -->
+                <button
+                  class="joker-avatar-btn"
+                  (click)="cycleAvatar(i)"
+                  title="Trocar Ícone do Jogador"
+                >
+                  <i class="fas" [ngClass]="player.avatar"></i>
+                </button>
+
+                <div class="flex-grow-1">
+                  <input
+                    type="text"
+                    [(ngModel)]="player.name"
+                    class="player-name-input w-100"
+                    [placeholder]="'Jogador ' + (i + 1)"
+                    maxlength="16"
+                  />
+                </div>
+
+                <span class="balatro-chip chip-yellow py-1 px-2 fs-6">#{{ i + 1 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botão Principal Jogar -->
+          <div class="text-center pt-2">
+            <button class="btn-balatro btn-balatro-yellow w-100 py-3 fs-3" (click)="startGame()">
+              <i class="fas fa-play me-2"></i> INICIAR JOGO &bull; RUN
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Botão para iniciar o jogo -->
-    <div class="text-center mt-4">
-      <button class="btn btn-lg btn-success" (click)="startGame()">Começar Jogo</button>
-    </div>
-  </div>
+      <!-- Coluna com Tabela de Combinações / Manual Balatro -->
+      <div class="col-12 col-lg-5">
+        <div class="balatro-card p-4 h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex align-items-center justify-content-between border-bottom border-dark pb-2 mb-3">
+              <h3 class="font-pixel fs-2 text-warning m-0">VALORES DAS JOGADAS</h3>
+              <span class="balatro-chip chip-blue small">REGRAS</span>
+            </div>
 
-  <!-- Coluna da Direita (Regras do Jogo) -->
-  <div
-    class="col-3 p-3 bg-secondary text-white d-flex flex-column justify-content-center align-items-center"
-  >
-    <h4 class="text-center fw-bold mb-3">Regras do Jogo:</h4>
-    <ul>
-      <li class="mb-4">
-        <strong>Objetivo:</strong> O jogador precisa acumular 5000 pontos exatos
-        para vencer.
-      </li>
-      <li class="mb-4">
-        <strong>Pontuação dos Dados:</strong>
-        <ul>
-          <li><strong>1</strong> vale 100 pontos.</li>
-          <li><strong>5</strong> vale 50 pontos.</li>
-          <li><strong>Sequência</strong> de 1-5 ou 2-6 vale 750 pontos.</li>
-          <li>
-            <strong>Trinca</strong> de qualquer número: valor do número vezes
-            100.
-          </li>
-          <li>
-            <strong>Quadrupla</strong> de qualquer número: valor do número vezes
-            200.
-          </li>
-          <li>
-            <strong>Quintupla</strong> de qualquer número: valor do número vezes
-            1000.
-          </li>
-          <li>
-            <strong>Trinca de 1</strong> vale 1000 pontos,
-            <strong>Quadrupla de 1</strong> vale 2000 pontos e
-            <strong>Quintupla de 1</strong> vale 5000 pontos.
-          </li>
-        </ul>
-      </li>
-      <li>
-        <strong>Regras adicionais:</strong>
-        <ul>
-          <li>
-            Se você passar de 5000 pontos, você perde os pontos dessa rodada.
-          </li>
-          <li>
-            Para pontuar pela primeira vez, é necessário marcar no mínimo 500
-            pontos.
-          </li>
-        </ul>
-      </li>
-    </ul>
-  </div>
+            <div class="deck-rules-list">
+              <div class="rule-item d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                <span><span class="balatro-chip chip-red py-0 px-2 small me-2">1</span> Ás Avulso</span>
+                <span class="font-pixel text-warning fs-5">+100 PTS</span>
+              </div>
+              <div class="rule-item d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                <span><span class="balatro-chip chip-blue py-0 px-2 small me-2">5</span> Cinco Avulso</span>
+                <span class="font-pixel text-warning fs-5">+50 PTS</span>
+              </div>
+              <div class="rule-item d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                <span>Sequência (1-5 ou 2-6)</span>
+                <span class="font-pixel text-warning fs-5">+750 PTS</span>
+              </div>
+              <div class="rule-item d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                <span>Trinca de 1 (1-1-1)</span>
+                <span class="font-pixel text-warning fs-5">+1.000 PTS</span>
+              </div>
+              <div class="rule-item d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                <span>Trinca (2, 3, 4, 5, 6)</span>
+                <span class="font-pixel text-warning fs-5">NÚMERO x 100</span>
+              </div>
+              <div class="rule-item d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                <span>Quádrupla (4 dados)</span>
+                <span class="font-pixel text-warning fs-5">DOBRO DA TRINCA</span>
+              </div>
+              <div class="rule-item d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                <span>Quíntupla (5 dados)</span>
+                <span class="font-pixel text-warning fs-5">10x A TRINCA</span>
+              </div>
+            </div>
+
+            <!-- Avisos Balatro -->
+            <div class="balatro-card-light p-3 mt-4">
+              <div class="font-pixel fs-5 text-danger fw-bold mb-1">
+                <i class="fas fa-triangle-exclamation me-1"></i> MECÂNICAS CRÍTICAS:
+              </div>
+              <ul class="mb-0 ps-3 small text-dark fw-bold">
+                <li><strong>Mão Quente (Hot Dice):</strong> Ao pontuar todos os 5 dados, todos voltam para a mesa e você pode continuar acumulando!</li>
+                <li><strong>Entrada na Mesa:</strong> Para abrir seu placar pela 1ª vez, você precisa somar no mínimo <strong>500 pontos</strong> em uma única rodada.</li>
+                <li><strong>Física Tabletop:</strong> Você pode clicar nos dados com o mouse, segurar no ar, balançar e arremessar na mesa!</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="text-center text-light font-pixel small mt-3">
+            5 MIL! &bull; O JOGO DE DADOS DEFINITIVO
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
 </div>
-

@@ -1,196 +1,328 @@
-.game-container {
-  .score-board {
-    background-color: #2e2e2e;
-
-    h3 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .list-group-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: none;
-      padding: 15px;
-      font-size: 1.2rem;
-
-      &.current-player {
-        background-color: #ffc107; /* Destaque para o jogador atual */
-        color: #000;
-        font-weight: bold;
-      }
-    }
-  }
-
-  .dice-area {
-    min-height: 300px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 40px;
-
-    .dice {
-      width: 80px;
-      height: 80px;
-      opacity: 1; /* Padrão: totalmente visível */
-      transition: opacity 0.3s ease; /* Suaviza as mudanças de opacidade */
-    }
-
-    .fade-out {
-      opacity: 0; /* Gradualmente desaparece */
-    }
-
-    .fade-in {
-      opacity: 0; /* Inicialmente invisível */
-      animation: fadeIn 0.3s forwards; /* Gradualmente aparece */
-    }
-
-    .spin-animation {
-      animation: spin 2s ease-in-out;
-    }
-  }
-
-  .button-area {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-
-    .btn {
-      width: 200px;
-      padding: 15px;
-      font-size: 1.2rem;
-      border-radius: 10px;
-
-      &:hover {
-        transform: scale(1.1);
-        transition: 0.3s;
-      }
-    }
-  }
-
-  .saved-dice {
-    background-color: #2e2e2e;
-
-    h3 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .saved-dice-area {
-      min-height: 300px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-
-      .dice {
-        width: 80px;
-        height: 80px;
-        opacity: 1; /* Padrão: totalmente visível */
-        transition: opacity 0.3s ease; /* Suaviza as mudanças de opacidade */
-      }
-
-      .fade-out {
-        opacity: 0; /* Gradualmente desaparece */
-      }
-
-      .fade-in {
-        opacity: 0; /* Inicialmente invisível */
-        animation: fadeIn 0.3s forwards; /* Gradualmente aparece */
-      }
-    }
-  }
+.balatro-game-container {
+  position: relative;
+  min-height: 100vh;
 }
 
-/* Animação para girar os dados */
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(90deg);
-  }
-  50% {
-    transform: rotate(180deg);
-  }
-  75% {
-    transform: rotate(270deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.cursor-pointer {
+  cursor: pointer;
 }
 
-/* Animação de fade-in */
-@keyframes fadeIn {
-  to {
-    opacity: 1;
-  }
+.balatro-hud {
+  background: #000;
+  border-bottom: 3px solid #000;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
+  z-index: 100;
 }
 
-/* Estilo do botão flutuante para abrir o Offcanvas */
-button[data-bs-toggle="offcanvas"] {
-  background-color: #ffffff; /* Cor de fundo dourada escura */
-  color: #0e5fca;
-  border: none;
-  width: 60px;
-  height: 60px;
+.hud-brand {
+  font-size: 1.8rem;
+  color: var(--balatro-yellow);
+  text-shadow: 2px 2px 0 #000;
+  line-height: 1;
+}
+
+.hud-sub {
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  font-family: var(--font-pixel);
+}
+
+.player-joker-badge {
+  width: 36px;
+  height: 36px;
+  background: var(--balatro-yellow);
+  border: 2px solid #000;
+  border-radius: 6px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  font-size: 1.5rem;
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1050; /* Garante que o botão fique acima de outros elementos */
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  transition: background-color 0.3s ease;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #000;
+}
 
-  &:hover {
-    background-color: #8b8b8b; /* Cor dourada clara ao passar o mouse */
+.player-turn-name {
+  color: #111;
+  line-height: 1;
+}
+
+/* Placar Lateral */
+.balatro-player-tab {
+  background: #090c0f;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
+  transition: all 0.15s ease;
+
+  &.active-player-card {
+    background: #1e1b12;
+    border-color: var(--balatro-yellow);
+    box-shadow: 3px 3px 0 var(--balatro-yellow);
+    transform: translate(-2px, -2px);
+  }
+
+  .joker-tab-icon {
+    width: 26px;
+    height: 26px;
+    background: #252830;
+    border: 1px solid #000;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+}
+
+.balatro-progress {
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+
+/* Mesa 3D Top-Down */
+.tabletop-stage {
+  height: 100%;
+  min-height: 480px;
+}
+
+.tabletop-bottom-bar {
+  height: 72px;
+  min-height: 72px;
+  max-height: 72px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: visible; // Permite que dados selecionados e badges flutuem sem serem cortados
+  position: relative;
+  z-index: 30;
+}
+
+/* Banners Balatro Pop */
+.balatro-banner-overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 90%;
+  max-width: 440px;
+  animation: bannerBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  &.banner-farkle .balatro-card {
+    background: #6a040f;
+    border-color: #000;
+  }
+
+  &.banner-hotdice .balatro-card {
+    background: #e85d04;
+    border-color: #ffd166;
+  }
+
+  &.banner-warning .balatro-card {
+    background: #2d1810;
+  }
+}
+
+@keyframes bannerBounce {
+  0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* Cartas de Dados na Mão */
+.balatro-die-card {
+  width: 50px;
+  height: 52px;
+  background: linear-gradient(145deg, #d91a2a, #9e0e1c);
+  border: 2px solid #4a030a;
+  border-radius: 10px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: visible;
+  z-index: 5;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  .die-card-val {
+    font-family: var(--font-pixel);
+    font-size: 2rem;
+    font-weight: 700;
     color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    line-height: 1;
+
+    &.val-red {
+      color: #ffffff;
+    }
   }
 
-  i {
-    font-size: 1.8rem;
+  .card-check-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    background: #2ec4b6;
+    color: #000;
+    border: 2px solid #000;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 20;
+  }
+
+  .card-ineligible-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: #6a040f;
+    color: #fff;
+    border: 2px solid #000;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+
+  &.card-eligible {
+    border-color: #ffd166;
+    box-shadow: 0 0 8px rgba(255, 209, 102, 0.4), 0 3px 6px rgba(0, 0, 0, 0.5);
+  }
+
+  &.card-selected {
+    transform: translateY(-8px);
+    background: linear-gradient(145deg, #ef233c, #b31221);
+    box-shadow: 0 0 14px rgba(255, 209, 102, 0.7), 0 6px 12px rgba(0, 0, 0, 0.6);
+    border-color: #ffd166;
+    z-index: 15;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-4px);
+    filter: brightness(1.1);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 }
 
-/* Estilo do Offcanvas */
-.offcanvas {
-  width: 400px;
+/* Painel da Direita & Prevenção de Layout Shift */
+.right-action-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.offcanvas-header {
-  background-color: #a5a5a5; /* Cor mais clara para o cabeçalho */
-  color: #333; /* Texto escuro para contraste suave */
-  border-bottom: 1px solid #a0a0a0; /* Limite sutil em cinza claro */
+.round-score-box {
+  flex-shrink: 0;
 }
 
-.offcanvas-body {
-  background-color: #b4b4b4; /* Fundo cinza claro para o corpo */
-  color: #333; /* Texto preto para boa legibilidade */
-  font-size: 1.1rem;
-  padding: 20px;
+.round-huge-score {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 0.95;
+  text-shadow: 3px 3px 0 #000;
 }
 
-.offcanvas-body ul {
-  list-style-type: disc;
-  padding-left: 20px;
+.combos-box {
+  flex-shrink: 0;
+
+  .fixed-combos-list {
+    height: 64px;
+    max-height: 64px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--balatro-yellow) #111;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--balatro-yellow);
+      border-radius: 2px;
+    }
+  }
 }
 
-.offcanvas-body li {
-  margin-bottom: 10px;
+.locked-box {
+  flex-shrink: 0;
+
+  .fixed-locked-list {
+    height: 48px;
+    max-height: 48px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    scrollbar-width: thin;
+    scrollbar-color: var(--balatro-blue) #111;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--balatro-blue);
+      border-radius: 2px;
+    }
+  }
 }
 
-.offcanvas-body li ul {
-  list-style-type: circle;
-  padding-left: 15px;
+/* Deck de Botões de Ação com Posição e Slots Totalmente Fixos */
+.action-buttons-deck {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 2px solid #000;
+  flex-shrink: 0;
+
+  .action-btn-slot {
+    width: 100%;
+    position: relative;
+
+    &.slot-primary {
+      height: 52px;
+    }
+
+    &.slot-secondary {
+      height: 38px;
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      box-sizing: border-box;
+      transition: transform 0.1s ease, filter 0.1s ease;
+    }
+  }
 }
 
-.offcanvas-body .mb-4 {
-  margin-bottom: 20px;
+/* Modais Balatro */
+.balatro-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 1050;
+  animation: fadeIn 0.15s ease;
 }
 
-  
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
