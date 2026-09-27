@@ -3,9 +3,10 @@
    ========================================================== */
 
 :root {
-  /* Fontes nítidas e 100% legíveis com suporte completo a caracteres em português */
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-pixel: 'Space Grotesk', sans-serif;
+  /* Tipografia Arcade Chunky de Alto Impacto (Chakra Petch & Russo One) */
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-pixel: 'Chakra Petch', sans-serif;
+  --font-numbers: 'Russo One', 'Chakra Petch', sans-serif;
   --font-modern: 'Space Grotesk', sans-serif;
 
   /* Cores Balatro de Alto Contraste */
@@ -54,12 +55,20 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-modern);
+  font-family: var(--font-pixel);
   background: #090e13;
   color: var(--text-primary);
   overflow-x: hidden;
   user-select: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6,
+button, input, select, textarea,
+.btn, .badge, .card-title, .modal-title,
+.form-control, .form-select {
+  font-family: var(--font-pixel);
 }
 
 /* Fundo Hipnótico Animado (Balatro Swirl Plasma Suave) */
@@ -116,8 +125,8 @@ body {
 }
 
 .font-pixel {
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-pixel);
+  font-weight: 700;
   letter-spacing: 0.5px;
 }
 
@@ -143,9 +152,9 @@ body {
 
 /* Botões Estilo Balatro (Chunky, Pop, Sombras Offset Duras) */
 .btn-balatro {
-  font-family: var(--font-display);
+  font-family: var(--font-pixel);
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 12px 24px;
@@ -210,8 +219,8 @@ body {
   border-radius: 8px;
   border: 2px solid var(--balatro-border);
   box-shadow: 2px 2px 0px #000;
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-pixel);
+  font-weight: 700;
   font-size: 1rem;
 
   &.chip-red { background: var(--balatro-red); color: #fff; }
@@ -256,4 +265,44 @@ body {
   background: var(--balatro-yellow);
   border: 2px solid #000;
   border-radius: 4px;
+}
+
+/* Linhas do Modal de Opções - Tema Escuro de Alto Contraste */
+.settings-row-card {
+  background: #0d151d;
+  border: 2px solid #233446;
+  border-radius: 10px;
+  box-shadow: 2px 2px 0px #000;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--balatro-yellow);
+  }
+
+  .setting-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .setting-subtitle {
+    font-size: 0.85rem;
+    color: #94a3b8 !important;
+  }
+}
+
+.toggle-btn-fixed {
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
+  height: 40px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  border-radius: 8px;
 }

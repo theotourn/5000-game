@@ -15,6 +15,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import * as CANNON from 'cannon-es';
 import { SoundService } from '../../services/sound.service';
+import { GameService } from '../../services/game.service';
 
 interface DieInstance {
   mesh: THREE.Mesh;
@@ -29,6 +30,14 @@ interface DieInstance {
   offsetY?: number;
   initialRotY?: number;
   followSpeed: number;
+  tableStartPos?: THREE.Vector3;
+  tableTargetPos?: THREE.Vector3;
+  tableStartQuat?: THREE.Quaternion;
+  tableTargetQuat?: THREE.Quaternion;
+  startShowcasePos?: THREE.Vector3;
+  targetShowcasePos?: THREE.Vector3;
+  startShowcaseQuat?: THREE.Quaternion;
+  targetShowcaseQuat?: THREE.Quaternion;
 }
 
 export interface DieOverlay {
@@ -83,8 +92,8 @@ export interface FloatingScorePopup {
         <i class="fas fa-arrows-up-down-left-right me-2"></i> BALANCE O MOUSE E SOLTE PARA ARREMESSAR!
       </div>
 
-      <div class="tabletop-guide font-pixel rolling-banner" *ngIf="isRollingAny">
-        <i class="fas fa-dice fa-spin me-2"></i> DADOS ROLANDO NA MESA...
+      <div class="tabletop-guide font-pixel rolling-banner" *ngIf="isRollingAny || isCorrectingOnTable">
+        <i class="fas fa-dice fa-spin me-2"></i> DADOS EM MOVIMENTO NA MESA...
       </div>
     </div>
   `,
@@ -273,14 +282,23 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
   public isFloating = false;
   public isHolding = false;
   public isRollingAny = false;
+  public isCorrectingOnTable = false;
+  public isTransitioningToShowcase = false;
+  public isShowcasing = false;
 
-  private groupCenter = new THREE.Vector3(0, 3.2, 0.4);
-  private dragHistory: { x: number; z: number; time: number }[] = [];
-  private lastSoundTime = 0;
-  private throwTimestamp = 0;
+  private tableCorrectionStartTime = 0;
+  private readonly tableCorrectionDuration = 380;
+  private showcaseStartTime = 0;
+  private readonly showcaseDuration = 650;
+  private pendingOrderedValues: number[] = [];
   private settleTimeoutId: number | null = null;
+  private showcaseTimerId: number | null = null;
 
   // Detecção de "Sacudir" estilo Tabletop Simulator (inversões rápidas de sentido do mouse)
+  private groupCenter = new THREE.Vector3(0, 3.2, 0);
+  private dragHistory: { x: number; z: number; time: number }[] = [];
+  private throwTimestamp = 0;
+  private lastSoundTime = 0;
   private shakeEnergy = 0;
   private lastMoveX = 0;
   private lastMoveZ = 0;
@@ -305,6 +323,7 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
   constructor(
     private ngZone: NgZone,
     private soundService: SoundService,
+    private gameService: GameService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -342,16 +361,16 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
     this.dicePhysMat = new CANNON.Material('dice');
     this.wallPhysMat = new CANNON.Material('wall');
 
-    // 1. DADO <-> DADO: colisão física de sólidos reais
+    // 1. DADO <-> DADO: colisão física de sólidos reais (baixo atrito para deslizamento e rolagem desimpedida)
     const diceDiceContact = new CANNON.ContactMaterial(this.dicePhysMat, this.dicePhysMat, {
-      friction: 0.35,
-      restitution: 0.3,
+      friction: 0.15,
+      restitution: 0.35,
     });
     this.world.addContactMaterial(diceDiceContact);
 
-    // 2. DADO <-> FELTRO
+    // 2. DADO <-> FELTRO (atrito suave para desaceleração orgânica sem travamento abrupto em quinas)
     const diceTableContact = new CANNON.ContactMaterial(this.dicePhysMat, this.tablePhysMat, {
-      friction: 0.65,
+      friction: 0.50,
       restitution: 0.22,
     });
     this.world.addContactMaterial(diceTableContact);
@@ -696,6 +715,8 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
     this.isFloating = true;
     this.isHolding = false;
     this.isRollingAny = false;
+    this.isTransitioningToShowcase = false;
+    this.isShowcasing = false;
 
     // Layout orgânico de "punhado de dados" (cluster natural juntinho, e.g. 3 atrás e 2 na frente)
     const clusterPresets: Record<number, { x: number; z: number; y: number; rotY: number }[]> = {
@@ -738,7 +759,8 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
         dieGeo.addGroup(f * faceVertCount, faceVertCount, f);
       }
 
-      const mesh = new THREE.Mesh(dieGeo, this.diceMaterials[0]);
+      const dieMaterials = this.diceMaterials[0].map((m) => m.clone());
+      const mesh = new THREE.Mesh(dieGeo, dieMaterials);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
@@ -770,8 +792,8 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
         type: CANNON.Body.STATIC,
         material: this.dicePhysMat,
         shape: new CANNON.Box(new CANNON.Vec3(halfSize, halfSize, halfSize)),
-        linearDamping: 0.38,
-        angularDamping: 0.48,
+        linearDamping: 0.28,
+        angularDamping: 0.24,
       });
       body.collisionResponse = false;
       body.position.set(mesh.position.x, mesh.position.y, mesh.position.z);
@@ -811,11 +833,18 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
    * Arremessa os dados: FÍSICA PURA DO CANNON-ES DETERMINA O RESULTADO REAL
    */
   public throwAll(vx = 0, vz = -14) {
-    if (!this.isFloating && !this.isHolding && this.isRollingAny) return;
+    if (!this.isFloating && !this.isHolding && (this.isRollingAny || this.isCorrectingOnTable || this.isTransitioningToShowcase)) return;
 
     this.isFloating = false;
     this.isHolding = false;
     this.isRollingAny = true;
+    this.isCorrectingOnTable = false;
+    this.isTransitioningToShowcase = false;
+    this.isShowcasing = false;
+    if (this.showcaseTimerId) {
+      clearTimeout(this.showcaseTimerId);
+      this.showcaseTimerId = null;
+    }
     this.throwTimestamp = performance.now();
 
     this.rollStarted.emit();
@@ -841,27 +870,289 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
       die.outlineMat.opacity = 0.70;
       die.outlineMesh.scale.setScalar(1.02);
 
+      // Restaura brilho original do material do dado
+      if (Array.isArray(die.mesh.material)) {
+        die.mesh.material.forEach((m) => {
+          if (m instanceof THREE.MeshStandardMaterial) {
+            m.color.setHex(0xffffff);
+            m.emissive.setHex(0x000000);
+          }
+        });
+      }
+
       // Ativa Corpo Dinâmico com Física Real
       die.body.type = CANNON.Body.DYNAMIC;
       die.body.collisionResponse = true;
       die.body.mass = 1.35;
-      die.body.linearDamping = 0.38;
-      die.body.angularDamping = 0.48;
+      die.body.linearDamping = 0.28;
+      die.body.angularDamping = 0.24;
       die.body.updateMassProperties();
       die.body.wakeUp();
 
-      // Dispersão e Impulsos Caóticos Reais na direção exata do arremesso
-      const spreadX = clampedVx + (Math.random() - 0.5) * 4.5;
-      const spreadZ = clampedVz + (Math.random() - 0.5) * 4.5;
-      const jumpY = 3.0 + Math.random() * 2.5;
+      // Dispersão Radial Ampla: Espalha os dados em leque pela mesa para nunca caírem amontoados
+      const count = this.diceList.length;
+      const fanAngle = (idx / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const fanSpeed = 4.8 + Math.random() * 3.6; // Impulso lateral expansivo
+      const spreadX = clampedVx + Math.cos(fanAngle) * fanSpeed + (Math.random() - 0.5) * 2.0;
+      const spreadZ = clampedVz + Math.sin(fanAngle) * fanSpeed + (Math.random() - 0.5) * 2.0;
+      const jumpY = 4.2 + Math.random() * 2.8;
 
       die.body.velocity.set(spreadX, jumpY, spreadZ);
       die.body.angularVelocity.set(
-        (Math.random() - 0.5) * 22,
-        (Math.random() - 0.5) * 22,
-        (Math.random() - 0.5) * 22
+        (Math.random() - 0.5) * 26,
+        (Math.random() - 0.5) * 26,
+        (Math.random() - 0.5) * 26
       );
     });
+  }
+
+  /**
+   * Calcula posições e rotações corrigidas no feltro (sem clipping e sem empilhamento)
+   * e inicia a animação suave de correção na mesa.
+   */
+  private startTableCorrection() {
+    const floorY = this.tableBounds.floorY;
+    const count = this.diceList.length;
+    const safeDist = this.minDistance + 0.22; // ~2.04 para dados de 1.30
+
+    // 1. Armazena estado inicial e inicializa alvos
+    this.diceList.forEach((die) => {
+      die.tableStartPos = die.mesh.position.clone();
+      die.tableStartQuat = die.mesh.quaternion.clone();
+      die.tableTargetPos = new THREE.Vector3(die.tableStartPos.x, floorY, die.tableStartPos.z);
+
+      // Encontra a face mais voltada para o topo (+Y)
+      let bestFace = this.faceNormals[0];
+      let maxDot = -Infinity;
+      for (const f of this.faceNormals) {
+        const worldNormal = f.normal.clone().applyQuaternion(die.mesh.quaternion);
+        if (worldNormal.y > maxDot) {
+          maxDot = worldNormal.y;
+          bestFace = f;
+        }
+      }
+
+      // Rotação corretiva para nivelar a face perfeitamente plana no topo (+Y)
+      const vUp = bestFace.normal.clone().applyQuaternion(die.mesh.quaternion);
+      const qCorr = new THREE.Quaternion().setFromUnitVectors(vUp, new THREE.Vector3(0, 1, 0));
+      die.tableTargetQuat = qCorr.multiply(die.mesh.quaternion.clone());
+    });
+
+    // 2. Se algum dado parou empilhado em cima de outro (Y elevado), projeta lateralmente para fora
+    for (let i = 0; i < count; i++) {
+      const d1 = this.diceList[i];
+      if (d1.tableStartPos!.y > floorY + 0.28) {
+        for (let j = 0; j < count; j++) {
+          if (i === j) continue;
+          const d2 = this.diceList[j];
+          const dx = d1.tableTargetPos!.x - d2.tableTargetPos!.x;
+          const dz = d1.tableTargetPos!.z - d2.tableTargetPos!.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist < safeDist) {
+            const angle = dist > 0.05 ? Math.atan2(dz, dx) : ((i + 1) * 1.57);
+            d1.tableTargetPos!.x = d2.tableTargetPos!.x + Math.cos(angle) * (safeDist + 0.35);
+            d1.tableTargetPos!.z = d2.tableTargetPos!.z + Math.sin(angle) * (safeDist + 0.35);
+          }
+        }
+      }
+    }
+
+    // 3. Relaxamento iterativo em 2D (24 passos) para garantir ZERO clipping ou sobreposição
+    for (let iter = 0; iter < 24; iter++) {
+      for (let i = 0; i < count; i++) {
+        for (let j = i + 1; j < count; j++) {
+          const t1 = this.diceList[i].tableTargetPos!;
+          const t2 = this.diceList[j].tableTargetPos!;
+          const dx = t1.x - t2.x;
+          const dz = t1.z - t2.z;
+          const dist = Math.hypot(dx, dz);
+
+          if (dist < safeDist) {
+            const overlap = safeDist - (dist || 0.001);
+            const angle = dist > 0.05 ? Math.atan2(dz, dx) : ((i + 1) * 1.57);
+            const pushX = Math.cos(angle) * overlap * 0.55;
+            const pushZ = Math.sin(angle) * overlap * 0.55;
+
+            t1.x += pushX;
+            t1.z += pushZ;
+            t2.x -= pushX;
+            t2.z -= pushZ;
+          }
+        }
+
+        // Limita rigidamente dentro das bordas da mesa
+        const t = this.diceList[i].tableTargetPos!;
+        t.x = THREE.MathUtils.clamp(t.x, -this.tableBounds.halfX + 1.2, this.tableBounds.halfX - 1.2);
+        t.z = THREE.MathUtils.clamp(t.z, -this.tableBounds.halfZ + 1.2, this.tableBounds.halfZ - 1.2);
+      }
+    }
+
+    // 4. Checa se alguma correção é necessária
+    const needsCorrection = this.diceList.some((d) => {
+      const posDist = Math.hypot(d.tableStartPos!.x - d.tableTargetPos!.x, d.tableStartPos!.z - d.tableTargetPos!.z);
+      const yDiff = Math.abs(d.tableStartPos!.y - floorY);
+      const quatAngle = d.tableStartQuat!.angleTo(d.tableTargetQuat!);
+      return posDist > 0.05 || yDiff > 0.05 || quatAngle > 0.04;
+    });
+
+    if (needsCorrection) {
+      this.tableCorrectionStartTime = performance.now();
+      this.isCorrectingOnTable = true;
+    } else {
+      // Já está perfeitamente plano e assentado, finaliza imediatamente na mesa
+      this.finalizeTableRestingAndScore();
+    }
+  }
+
+  /**
+   * Finaliza o assentamento na mesa, lê as faces, atualiza os dados e
+   * PONTUA IMEDIATAMENTE NA MESA com os popups e brilhos ocorrendo onde os dados pararam!
+   */
+  private finalizeTableRestingAndScore() {
+    this.isCorrectingOnTable = false;
+    const floorY = this.tableBounds.floorY;
+
+    // Sincroniza posições e corpos físicos
+    this.diceList.forEach((die) => {
+      if (die.tableTargetPos && die.tableTargetQuat) {
+        die.mesh.position.copy(die.tableTargetPos);
+        die.mesh.quaternion.copy(die.tableTargetQuat);
+        die.body.position.set(die.tableTargetPos.x, floorY, die.tableTargetPos.z);
+        die.body.quaternion.set(die.tableTargetQuat.x, die.tableTargetQuat.y, die.tableTargetQuat.z, die.tableTargetQuat.w);
+      }
+      die.body.velocity.set(0, 0, 0);
+      die.body.angularVelocity.set(0, 0, 0);
+      die.body.sleep();
+    });
+
+    // Lê os números físicos reais na mesa
+    const rawValues = this.diceList.map((d) => this.getPhysicalTopFace(d.mesh));
+    const scoringIndices = this.gameService.getScoringDiceIndices(rawValues);
+
+    const scoringItems: { die: DieInstance; value: number }[] = [];
+    const nonScoringItems: { die: DieInstance; value: number }[] = [];
+
+    this.diceList.forEach((die, idx) => {
+      const val = rawValues[idx];
+      if (scoringIndices.includes(idx)) {
+        scoringItems.push({ die, value: val });
+      } else {
+        nonScoringItems.push({ die, value: val });
+      }
+    });
+
+    // Ordenação de menor para maior:
+    scoringItems.sort((a, b) => a.value - b.value);
+    nonScoringItems.sort((a, b) => a.value - b.value);
+
+    const orderedItems = [...scoringItems, ...nonScoringItems];
+    this.diceList = orderedItems.map((item) => item.die);
+    this.pendingOrderedValues = orderedItems.map((item) => item.value);
+
+    this.updateDiceOverlays();
+
+    // EMITE PONTUAÇÃO IMEDIATAMENTE NA MESA!
+    this.ngZone.run(() => {
+      this.rollFinished.emit(this.pendingOrderedValues);
+    });
+
+    // Após 1100ms (tempo para o jogador ver e comemorar os pontos na mesa),
+    // os dados sobem suavemente para a vitrine frontal!
+    if (this.showcaseTimerId) {
+      clearTimeout(this.showcaseTimerId);
+    }
+    this.showcaseTimerId = window.setTimeout(() => {
+      this.startShowcaseTransition();
+    }, 1100);
+  }
+
+  /**
+   * Inicia o voo dos dados da mesa para a vitrine frontal perto da câmera.
+   */
+  private startShowcaseTransition() {
+    const count = this.diceList.length;
+    const spacing = 1.95;
+    const showcaseY = 3.6;
+    const showcaseZ = 0.4;
+
+    this.showcaseStartTime = performance.now();
+    this.isTransitioningToShowcase = true;
+    this.isShowcasing = false;
+
+    this.diceList.forEach((die, idx) => {
+      die.startShowcasePos = die.mesh.position.clone();
+      die.startShowcaseQuat = die.mesh.quaternion.clone();
+
+      const targetX = (idx - (count - 1) / 2) * spacing;
+      die.targetShowcasePos = new THREE.Vector3(targetX, showcaseY, showcaseZ);
+
+      // Orientação 100% perfeitamente reta e alinhada à tela para a face rolada
+      die.targetShowcaseQuat = this.getSquaredQuatForValue(this.pendingOrderedValues[idx]);
+    });
+  }
+
+  /**
+   * Retorna a rotação 100% perfeitamente esquadrinhada e reta para a face rolada:
+   * A face rolada aponta diretamente para a câmera (+Y),
+   * o topo da face aponta para o topo da tela (-Z),
+   * e as colunas (como no 6) ficam perfeitamente verticais.
+   */
+  private getSquaredQuatForValue(val: number): THREE.Quaternion {
+    const m = new THREE.Matrix4();
+    switch (val) {
+      case 1:
+        // Face 1 (+X): Normal aponta para +Y, topo para -Z, direita para +X
+        m.set(
+           0,  0, -1, 0,
+           1,  0,  0, 0,
+           0, -1,  0, 0,
+           0,  0,  0, 1
+        );
+        break;
+      case 6:
+        // Face 6 (-X): Normal aponta para +Y, colunas perfeitamente verticais
+        m.set(
+           0,  0,  1, 0,
+          -1,  0,  0, 0,
+           0, -1,  0, 0,
+           0,  0,  0, 1
+        );
+        break;
+      case 2:
+        // Face 2 (+Y): Já está no topo
+        m.identity();
+        break;
+      case 5:
+        // Face 5 (-Y): Inverte 180°
+        m.set(
+           1,  0,  0, 0,
+           0, -1,  0, 0,
+           0,  0, -1, 0,
+           0,  0,  0, 1
+        );
+        break;
+      case 3:
+        // Face 3 (+Z): Gira 90° em torno de X
+        m.set(
+           1,  0,  0, 0,
+           0,  0,  1, 0,
+           0, -1,  0, 0,
+           0,  0,  0, 1
+        );
+        break;
+      case 4:
+        // Face 4 (-Z): Gira -90° em torno de X
+        m.set(
+          -1,  0,  0, 0,
+           0,  0, -1, 0,
+           0, -1,  0, 0,
+           0,  0,  0, 1
+        );
+        break;
+      default:
+        m.identity();
+    }
+    return new THREE.Quaternion().setFromRotationMatrix(m);
   }
 
   /**
@@ -893,20 +1184,41 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
 
       die.isSelected = isSelected;
 
-      // O contorno branco é o highlight APENAS para os que pontuaram:
+      // 1. Contorno 3D Cel-Shaded Estilizado
       if (isSelected) {
-        die.outlineMat.color.setHex(0xffffff); // Branco puro brilhante
+        // Dado Selecionado para pontuar: Borda Branca Pura Brilhante
+        die.outlineMat.color.setHex(0xffffff);
         die.outlineMat.opacity = 1.0;
-        die.outlineMesh.scale.setScalar(1.09);
+        die.outlineMesh.scale.setScalar(1.12);
       } else if (isEligible) {
-        die.outlineMat.color.setHex(0xffffff); // Branco puro de highlight
+        // Dado Pontuador DESSELECIONADO: Borda Amarela Dourada bem visível (Ouro Casino)
+        // Destaca claramente que é um dado que pontuou, mas não está selecionado no momento
+        die.outlineMat.color.setHex(0xffb703);
         die.outlineMat.opacity = 1.0;
-        die.outlineMesh.scale.setScalar(1.08);
+        die.outlineMesh.scale.setScalar(1.10);
       } else {
-        // Dados que NÃO pontuaram: contorninho preto bem de leve com bastante opacidade
+        // Dados que NÃO pontuaram: contorno sutil preto com baixa opacidade
         die.outlineMat.color.setHex(0x000000);
-        die.outlineMat.opacity = 0.70;
+        die.outlineMat.opacity = 0.35;
         die.outlineMesh.scale.setScalar(1.02);
+      }
+
+      // 2. Tonalidade e Brilho das Faces do Dado
+      if (Array.isArray(die.mesh.material)) {
+        die.mesh.material.forEach((m) => {
+          if (m instanceof THREE.MeshStandardMaterial) {
+            if (isSelected) {
+              m.color.setHex(0xffffff);
+              m.emissive.setHex(0x181818); // Leve realce incandescente
+            } else if (isEligible) {
+              m.color.setHex(0xffffff);
+              m.emissive.setHex(0x2e1e00); // Brilho âmbar dourado suave de dado premiado
+            } else {
+              m.color.setHex(0x757575); // Dado inativo escurecido
+              m.emissive.setHex(0x000000);
+            }
+          }
+        });
       }
     });
 
@@ -937,7 +1249,7 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
         y,
         isSelected: this.selectedIndices.includes(idx),
         isEligible: this.eligibleIndices.includes(idx),
-        visible: !this.isRollingAny && !this.isFloating,
+        visible: !this.isRollingAny && !this.isFloating && !this.isTransitioningToShowcase,
       };
     });
     this.cdr.markForCheck();
@@ -989,6 +1301,11 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
       die.outlineMesh.geometry.dispose();
       (die.outlineMesh.material as THREE.Material).dispose();
       die.mesh.geometry.dispose();
+      if (Array.isArray(die.mesh.material)) {
+        die.mesh.material.forEach((m) => m.dispose());
+      } else if (die.mesh.material) {
+        (die.mesh.material as THREE.Material).dispose();
+      }
       this.world.removeBody(die.body);
     });
     this.diceList = [];
@@ -997,10 +1314,17 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
     this.isFloating = false;
     this.isHolding = false;
     this.isRollingAny = false;
+    this.isCorrectingOnTable = false;
+    this.isTransitioningToShowcase = false;
+    this.isShowcasing = false;
     this.dragHistory = [];
     if (this.settleTimeoutId) {
       clearTimeout(this.settleTimeoutId);
       this.settleTimeoutId = null;
+    }
+    if (this.showcaseTimerId) {
+      clearTimeout(this.showcaseTimerId);
+      this.showcaseTimerId = null;
     }
   }
 
@@ -1012,9 +1336,9 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
     this.updateMouseCoords(event);
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
-    // 1. Dados em repouso: clique seleciona/desmarca para pontuar
-    const allSettled = this.diceList.every((d) => d.settled);
-    if (allSettled && !this.isRollingAny && !this.isFloating) {
+    // 1. Dados em repouso ou vitrine frontal: clique seleciona/desmarca para pontuar
+    const canClickDice = this.isShowcasing || (!this.isRollingAny && !this.isFloating && !this.isCorrectingOnTable && !this.isTransitioningToShowcase);
+    if (canClickDice) {
       const meshes = this.diceList.map((d) => d.mesh);
       const intersects = this.raycaster.intersectObjects(meshes);
       if (intersects.length > 0) {
@@ -1241,12 +1565,56 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
       });
     }
 
-    // 2. MODO ARREMESSO (Física Real Pura sem teleporte nem piscadas)
+    // 2. MODO ARREMESSO (Física Real Contínua com Tombamento Natural e Anti-Stacking em Voo)
     if (this.isRollingAny) {
       // Substepping do Cannon-es para estabilidade máxima e zero atravessamentos
       this.world.step(1 / 60, delta, 3);
 
       const timeSinceThrow = now - this.throwTimestamp;
+      const count = this.diceList.length;
+
+      // 2.1 FORÇAS FÍSICAS REAIS EM VOO (Anti-Stacking e Repelimento Suave)
+      for (let i = 0; i < count; i++) {
+        const d1 = this.diceList[i];
+        if (!d1.isRolling) continue;
+
+        for (let j = 0; j < count; j++) {
+          if (i === j) continue;
+          const d2 = this.diceList[j];
+
+          const dx = d1.body.position.x - d2.body.position.x;
+          const dz = d1.body.position.z - d2.body.position.z;
+          const horizDist = Math.hypot(dx, dz);
+          const dy = d1.body.position.y - d2.body.position.y;
+
+          // A. ANTI-EMPILHAMENTO NATURAL: Se d1 está sobre d2, ele escorrega e tomba para fora da face de d2
+          if (dy > 0.30 && horizDist < this.minDistance) {
+            const angle = horizDist > 0.05 ? Math.atan2(dz, dx) : ((i + 1) * 1.57);
+            const pushX = Math.cos(angle);
+            const pushZ = Math.sin(angle);
+
+            // Impulso lateral contínuo para escorregar para fora
+            d1.body.velocity.x += pushX * 4.0 * delta;
+            d1.body.velocity.z += pushZ * 4.0 * delta;
+
+            // Torque de rolamento orgânico
+            d1.body.torque.x += -pushZ * 10.0;
+            d1.body.torque.z += pushX * 10.0;
+          }
+
+          // B. REPELIMENTO SUAVE NO FELTRO: Se dois dados desacelerando estão muito grudados, afasta sutilmente
+          const isD1NearFloor = d1.body.position.y <= this.tableBounds.floorY + 0.40;
+          const isD2NearFloor = d2.body.position.y <= this.tableBounds.floorY + 0.40;
+          if (isD1NearFloor && isD2NearFloor && horizDist < this.minDistance && horizDist > 0.01) {
+            const overlap = this.minDistance - horizDist;
+            const pushAngle = Math.atan2(dz, dx);
+            const repulse = overlap * 7.0 * delta;
+            d1.body.velocity.x += Math.cos(pushAngle) * repulse;
+            d1.body.velocity.z += Math.sin(pushAngle) * repulse;
+          }
+        }
+      }
+
       let allDiceStopped = true;
 
       this.diceList.forEach((die) => {
@@ -1254,108 +1622,181 @@ export class DiceBoard3dComponent implements OnInit, OnDestroy {
 
         allDiceStopped = false;
 
-        // Trilha visual 100% física do Cannon-es
+        // Limita dentro da mesa para segurança absoluta
+        die.body.position.x = THREE.MathUtils.clamp(
+          die.body.position.x,
+          -this.tableBounds.halfX + 0.8,
+          this.tableBounds.halfX - 0.8
+        );
+        die.body.position.z = THREE.MathUtils.clamp(
+          die.body.position.z,
+          -this.tableBounds.halfZ + 0.8,
+          this.tableBounds.halfZ - 0.8
+        );
+
+        // Trilha visual 100% sincronizada com o corpo físico do Cannon
         die.mesh.position.set(die.body.position.x, die.body.position.y, die.body.position.z);
         die.mesh.quaternion.set(die.body.quaternion.x, die.body.quaternion.y, die.body.quaternion.z, die.body.quaternion.w);
 
         const vLen = die.body.velocity.length();
         const aLen = die.body.angularVelocity.length();
         const totalSpeed = vLen + aLen;
+        const isNearFloor = die.body.position.y <= this.tableBounds.floorY + 0.35;
 
-        // ANTI-EMPILHAMENTO: Se um dado parar ou diminuir a velocidade em cima de outro dado (Y alto),
-        // ele recebe um impulso lateral suave para escorregar até o feltro!
-        if (die.body.position.y > this.tableBounds.floorY + 0.45 && totalSpeed < 2.5) {
-          const pushAngle = Math.random() * Math.PI * 2;
-          die.body.velocity.x += Math.cos(pushAngle) * 3.5;
-          die.body.velocity.z += Math.sin(pushAngle) * 3.5;
-          die.body.angularVelocity.set((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
+        // 2.2 TORQUE GRAVITACIONAL DE TOMBAMENTO NA FACE (Gravity Face-Toppling)
+        // Como um dado de verdade, o peso da gravidade no centro de massa naturalmente tomba o dado
+        // para a face mais próxima de ficar paralela à mesa enquanto ele desacelera no feltro.
+        let bestFace = this.faceNormals[0];
+        let maxDot = -Infinity;
+        for (const f of this.faceNormals) {
+          const worldNormal = f.normal.clone().applyQuaternion(die.mesh.quaternion);
+          if (worldNormal.y > maxDot) {
+            maxDot = worldNormal.y;
+            bestFace = f;
+          }
         }
 
-        const isNearFloor = die.body.position.y <= this.tableBounds.floorY + 0.35;
-        // Permite que o dado pare naturalmente no feltro por atrito
-        const isSlowEnough = totalSpeed < 0.08 && isNearFloor;
-        // O timeout de segurança (3.5s) NUNCA é travado por isNearFloor! Garante que nunca trave
+        if (isNearFloor && totalSpeed < 7.0 && totalSpeed > 0.04) {
+          const vUp = bestFace.normal.clone().applyQuaternion(die.mesh.quaternion);
+          const torqueAxis = new THREE.Vector3().crossVectors(vUp, new THREE.Vector3(0, 1, 0));
+          const tiltSin = torqueAxis.length();
+
+          if (tiltSin > 0.005) {
+            torqueAxis.normalize();
+            // Intensidade do tombamento: suave enquanto rola, firme conforme desacelera
+            const decelProgress = THREE.MathUtils.clamp((7.0 - totalSpeed) / 4.5, 0.4, 1.0);
+            const torqueMag = 24.0 * tiltSin * decelProgress;
+
+            die.body.torque.x += torqueAxis.x * torqueMag;
+            die.body.torque.z += torqueAxis.z * torqueMag;
+          }
+        }
+
+        // 2.3 REPOUSO NATURAL
+        // Um dado de verdade para quando perde velocidade e assenta completamente na mesa
+        const isSlowEnough = totalSpeed < 0.12 && isNearFloor && maxDot > 0.96;
         const isTimeOut = timeSinceThrow > 3500;
 
         if (isSlowEnough || isTimeOut) {
           die.isRolling = false;
           die.settled = true;
 
+          // Microlock imperceptível dos últimos 0.5-1° para garantir 100% de nivelamento matemático
+          const vUp = bestFace.normal.clone().applyQuaternion(die.mesh.quaternion);
+          const qCorr = new THREE.Quaternion().setFromUnitVectors(vUp, new THREE.Vector3(0, 1, 0));
+          const finalQuat = qCorr.multiply(die.mesh.quaternion);
+
+          die.mesh.quaternion.copy(finalQuat);
+          die.mesh.position.y = this.tableBounds.floorY;
+          die.body.position.set(die.mesh.position.x, this.tableBounds.floorY, die.mesh.position.z);
+          die.body.quaternion.set(finalQuat.x, finalQuat.y, finalQuat.z, finalQuat.w);
+
           die.body.velocity.set(0, 0, 0);
           die.body.angularVelocity.set(0, 0, 0);
-
-          if (die.body.position.y > this.tableBounds.floorY + 0.1) {
-            die.body.position.y = this.tableBounds.floorY;
-          }
-
           die.body.sleep();
-          die.mesh.position.set(die.body.position.x, die.body.position.y, die.body.position.z);
-          die.mesh.quaternion.set(die.body.quaternion.x, die.body.quaternion.y, die.body.quaternion.z, die.body.quaternion.w);
         }
       });
 
-      // Quando todos os dados assentaram no feltro:
+      // 2.4 FINALIZAÇÃO DO ARREMESSO NA MESA
       if (allDiceStopped && this.diceList.length > 0 && this.diceList.every((d) => d.settled)) {
         this.isRollingAny = false;
-
-        // ANTI-EMPILHAMENTO E SEPARAÇÃO DEFINITIVA (Zero sobreposição / penetração):
-        // 1. Nivelar todos no chão físico da mesa
-        this.diceList.forEach((die) => {
-          die.body.position.y = this.tableBounds.floorY;
-          die.body.velocity.set(0, 0, 0);
-          die.body.angularVelocity.set(0, 0, 0);
-        });
-
-        // 2. 12 passos de relaxamento em 2D (X, Z) garantindo distância mínima
-        const count = this.diceList.length;
-        for (let iter = 0; iter < 12; iter++) {
-          for (let i = 0; i < count; i++) {
-            for (let j = i + 1; j < count; j++) {
-              const p1 = this.diceList[i].body.position;
-              const p2 = this.diceList[j].body.position;
-              const dx = p1.x - p2.x;
-              const dz = p1.z - p2.z;
-              const dist = Math.hypot(dx, dz);
-              if (dist < this.minDistance) {
-                const overlap = (this.minDistance - (dist || 0.001)) * 0.5;
-                const angle = dist > 0.001 ? Math.atan2(dz, dx) : Math.random() * Math.PI * 2;
-                p1.x += Math.cos(angle) * overlap;
-                p1.z += Math.sin(angle) * overlap;
-                p2.x -= Math.cos(angle) * overlap;
-                p2.z -= Math.sin(angle) * overlap;
-
-                p1.x = THREE.MathUtils.clamp(p1.x, -this.tableBounds.halfX + 1.2, this.tableBounds.halfX - 1.2);
-                p1.z = THREE.MathUtils.clamp(p1.z, -this.tableBounds.halfZ + 1.2, this.tableBounds.halfZ - 1.2);
-                p2.x = THREE.MathUtils.clamp(p2.x, -this.tableBounds.halfX + 1.2, this.tableBounds.halfX - 1.2);
-                p2.z = THREE.MathUtils.clamp(p2.z, -this.tableBounds.halfZ + 1.2, this.tableBounds.halfZ - 1.2);
-              }
-            }
-          }
-        }
-
-        // 3. Dorme os corpos e sincroniza malhas
-        this.diceList.forEach((die) => {
-          die.body.sleep();
-          die.mesh.position.set(die.body.position.x, die.body.position.y, die.body.position.z);
-          die.mesh.quaternion.set(die.body.quaternion.x, die.body.quaternion.y, die.body.quaternion.z, die.body.quaternion.w);
-        });
-
-        // Atualiza anéis e auras dos dados assentados
-        this.updateDiceOverlays();
-
-        // Lê os números reais físicos do topo de cada dado
-        const physicalResults = this.diceList.map((d) => this.getPhysicalTopFace(d.mesh));
-
-        // Delay de contemplação ágil de 600ms (vê parado claramente, sem lentidão)
-        if (this.settleTimeoutId) {
-          clearTimeout(this.settleTimeoutId);
-        }
-        this.settleTimeoutId = window.setTimeout(() => {
-          this.ngZone.run(() => {
-            this.rollFinished.emit(physicalResults);
-          });
-        }, 600);
+        // Inicia a correção suave no chão se houver dados tortos ou empilhados (sem teleporte)
+        this.startTableCorrection();
       }
+    } else if (this.isCorrectingOnTable) {
+      // 2.4.1 ANIMAÇÃO SUAVE DE CORREÇÃO NA MESA (Desliza suavemente para o lugar vazio e deita reto)
+      const elapsed = now - this.tableCorrectionStartTime;
+      const t = Math.min(1, elapsed / this.tableCorrectionDuration);
+      const ease = 1 - Math.pow(1 - t, 3); // Ease-out cúbico macio
+
+      this.diceList.forEach((die) => {
+        if (!die.tableStartPos || !die.tableTargetPos || !die.tableStartQuat || !die.tableTargetQuat) return;
+
+        die.mesh.position.lerpVectors(die.tableStartPos, die.tableTargetPos, ease);
+        die.mesh.quaternion.copy(die.tableStartQuat).slerp(die.tableTargetQuat, ease);
+
+        // Se estava empilhado, faz um pequeno arco para descer suavemente na mesa
+        if (die.tableStartPos.y > this.tableBounds.floorY + 0.28) {
+          die.mesh.position.y += Math.sin(t * Math.PI) * 0.12;
+        }
+      });
+
+      this.updateDiceOverlays();
+
+      if (t >= 1) {
+        this.finalizeTableRestingAndScore();
+      }
+    } else if (this.isTransitioningToShowcase) {
+      // 2.5 TRANSIÇÃO SUAVE PARA A VITRINE FRONTAL PERTO DA CÂMERA
+      const elapsed = now - this.showcaseStartTime;
+      const t = Math.min(1, elapsed / this.showcaseDuration);
+      const ease = 1 - Math.pow(1 - t, 3); // Ease-out cúbico macio
+
+      this.diceList.forEach((die) => {
+        if (!die.startShowcasePos || !die.targetShowcasePos || !die.startShowcaseQuat || !die.targetShowcaseQuat) return;
+        die.mesh.position.lerpVectors(die.startShowcasePos, die.targetShowcasePos, ease);
+        die.mesh.quaternion.copy(die.startShowcaseQuat).slerp(die.targetShowcaseQuat, ease);
+      });
+
+      this.updateDiceOverlays();
+
+      if (t >= 1) {
+        this.isTransitioningToShowcase = false;
+        this.isShowcasing = true;
+
+        this.diceList.forEach((die) => {
+          if (die.targetShowcasePos && die.targetShowcaseQuat) {
+            die.mesh.position.copy(die.targetShowcasePos);
+            die.mesh.quaternion.copy(die.targetShowcaseQuat);
+            die.body.position.set(die.targetShowcasePos.x, die.targetShowcasePos.y, die.targetShowcasePos.z);
+            die.body.quaternion.set(die.targetShowcaseQuat.x, die.targetShowcaseQuat.y, die.targetShowcaseQuat.z, die.targetShowcaseQuat.w);
+          }
+        });
+
+        this.updateDiceOverlays();
+      }
+    } else if (this.isShowcasing) {
+      // 2.6 MODO VITRINE: DADOS FLUTUANDO ALINHADOS COM IDLE BOBBING ORGÂNICO
+      const count = this.diceList.length;
+      const spacing = 1.95;
+      const time = now * 0.001;
+
+      this.diceList.forEach((die, idx) => {
+        const isEligible = this.eligibleIndices.includes(idx);
+        const targetX = (idx - (count - 1) / 2) * spacing;
+        
+        // 3 Elevações e profundidades distintas no modo vitrine:
+        // - Selecionado (ativo): levita mais alto (4.2) projetado à frente (0.35)
+        // - Elegível mas Desselecionado: intermediário (3.65) e centrado (0.40)
+        // - Não pontuador: repousa mais baixo (3.25) e recuado (0.55)
+        let baseY = 3.25;
+        let targetZ = 0.55;
+        if (die.isSelected) {
+          baseY = 4.2;
+          targetZ = 0.35;
+        } else if (isEligible) {
+          baseY = 3.65;
+          targetZ = 0.40;
+        }
+
+        const bobbingY = baseY + Math.sin(time * 2.2 + idx * 1.1) * 0.10;
+
+        die.mesh.position.x = THREE.MathUtils.lerp(die.mesh.position.x, targetX, 0.15);
+        die.mesh.position.z = THREE.MathUtils.lerp(die.mesh.position.z, targetZ, 0.15);
+        die.mesh.position.y = THREE.MathUtils.lerp(die.mesh.position.y, bobbingY, 0.15);
+
+        // Movimentinho suave de balanço (rocking) em torno da orientação perfeitamente reta
+        if (die.targetShowcaseQuat) {
+          const wobblePitch = Math.sin(time * 1.8 + idx * 1.3) * 0.035;
+          const wobbleRoll = Math.cos(time * 1.5 + idx * 1.1) * 0.035;
+          const qWobble = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(wobblePitch, 0, wobbleRoll, 'YXZ')
+          );
+          die.mesh.quaternion.copy(die.targetShowcaseQuat).multiply(qWobble);
+        }
+      });
+
+      this.updateDiceOverlays();
     } else if (!this.isFloating && !this.isHolding) {
       // 3. MODO REPOUSO / SELEÇÃO (Levitação suave dos dados marcados)
       this.diceList.forEach((die) => {

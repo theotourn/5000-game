@@ -1,6 +1,12 @@
 .balatro-game-container {
   position: relative;
   min-height: 100vh;
+
+  @media (min-width: 992px) {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
 }
 
 .cursor-pointer {
@@ -12,13 +18,33 @@
   border-bottom: 3px solid #000;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
   z-index: 100;
+  height: 70px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.hud-center-turn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.active-turn-pill {
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 .hud-brand {
-  font-size: 1.8rem;
+  font-family: var(--font-numbers);
+  font-size: 2.1rem;
+  font-weight: 800;
   color: var(--balatro-yellow);
   text-shadow: 2px 2px 0 #000;
   line-height: 1;
+  letter-spacing: 2px;
 }
 
 .hud-sub {
@@ -45,12 +71,75 @@
   line-height: 1;
 }
 
-/* Placar Lateral */
+/* Áreas de Layout de Tela Cheia Desktop (1920x1080) com Margem de Respiro Inferior */
+.game-main-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 16px 20px 20px 20px !important; // Margem confortável idêntica em cima e embaixo!
+
+  @media (min-width: 992px) {
+    height: calc(100vh - 70px);
+  }
+}
+
+.game-main-row {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.game-col-left,
+.game-col-center,
+.game-col-right {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+/* Placar Lateral - Preenchimento Completo da Tela */
+.placard-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.players-score-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--balatro-yellow) #111;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--balatro-yellow);
+    border-radius: 2px;
+  }
+}
+
 .balatro-player-tab {
   background: #090c0f;
   border: 2px solid #000;
   box-shadow: 2px 2px 0 #000;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 
   &.active-player-card {
     background: #1e1b12;
@@ -59,16 +148,21 @@
     transform: translate(-2px, -2px);
   }
 
+  .player-tab-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
   .joker-tab-icon {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     background: #252830;
     border: 1px solid #000;
     border-radius: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -78,10 +172,12 @@
   border-radius: 4px;
 }
 
-/* Mesa 3D Top-Down */
+/* Mesa 3D Top-Down - Expansão Vertical Total */
 .tabletop-stage {
+  flex: 1 1 0;
+  min-height: 0;
   height: 100%;
-  min-height: 480px;
+  width: 100%;
 }
 
 .tabletop-bottom-bar {
@@ -144,8 +240,8 @@
   transition: all 0.15s ease;
 
   .die-card-val {
-    font-family: var(--font-pixel);
-    font-size: 2rem;
+    font-family: var(--font-numbers);
+    font-size: 2.3rem;
     font-weight: 700;
     color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
@@ -192,15 +288,15 @@
   }
 
   &.card-eligible {
-    border-color: #ffd166;
-    box-shadow: 0 0 8px rgba(255, 209, 102, 0.4), 0 3px 6px rgba(0, 0, 0, 0.5);
+    border-color: #ffb703;
+    box-shadow: 0 0 12px rgba(255, 183, 3, 0.65), 0 3px 6px rgba(0, 0, 0, 0.5);
   }
 
   &.card-selected {
     transform: translateY(-8px);
     background: linear-gradient(145deg, #ef233c, #b31221);
-    box-shadow: 0 0 14px rgba(255, 209, 102, 0.7), 0 6px 12px rgba(0, 0, 0, 0.6);
-    border-color: #ffd166;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.85), 0 6px 12px rgba(0, 0, 0, 0.6);
+    border-color: #ffffff;
     z-index: 15;
   }
 
@@ -217,31 +313,83 @@
 
 /* Painel da Direita & Prevenção de Layout Shift */
 .right-action-panel {
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  overflow: hidden;
+}
+
+.info-cards-stack {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .round-score-box {
   flex-shrink: 0;
+  background: linear-gradient(135deg, #1e102d 0%, #0d1b2a 100%);
+  border: 2px solid #ffd166;
+  box-shadow: inset 0 0 16px rgba(255, 209, 102, 0.2), 3px 3px 0 #000;
+  border-radius: 8px;
+  padding: 10px 14px !important;
 }
 
 .round-huge-score {
-  font-size: 3.5rem;
-  font-weight: 700;
+  font-family: var(--font-numbers);
+  font-size: 3.8rem;
+  font-weight: 800;
   line-height: 0.95;
-  text-shadow: 3px 3px 0 #000;
+  color: #ffd166;
+  text-shadow: 2px 2px 0 #000, 0 0 16px rgba(255, 209, 102, 0.6);
+  margin: 3px 0;
+  letter-spacing: 1px;
+}
+
+.round-score-sub {
+  font-family: var(--font-pixel);
+  color: #cbd5e1;
+  font-size: 0.9rem;
 }
 
 .combos-box {
   flex-shrink: 0;
+  min-height: 120px;
+  max-height: 145px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .combos-header {
+    .balatro-chip {
+      font-size: 0.85rem;
+      padding: 3px 8px;
+    }
+  }
 
   .fixed-combos-list {
-    height: 64px;
-    max-height: 64px;
+    flex: 1 1 0;
+    min-height: 55px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--balatro-yellow) #111;
+
+    .combo-item {
+      font-size: 1.05rem;
+      line-height: 1.35;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .empty-combos-msg {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      margin: auto 0;
+      padding: 4px 0;
+    }
 
     &::-webkit-scrollbar {
       width: 4px;
@@ -255,34 +403,35 @@
 
 .locked-box {
   flex-shrink: 0;
+  min-height: 105px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
 
   .fixed-locked-list {
-    height: 48px;
-    max-height: 48px;
-    overflow-x: auto;
-    overflow-y: hidden;
+    min-height: 52px;
     display: flex;
     gap: 8px;
     align-items: center;
-    scrollbar-width: thin;
-    scrollbar-color: var(--balatro-blue) #111;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 2px 0;
 
-    &::-webkit-scrollbar {
-      height: 4px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: var(--balatro-blue);
-      border-radius: 2px;
+    .balatro-chip {
+      font-size: 1.35rem;
+      padding: 4px 12px;
+      box-shadow: 2px 2px 0 #000;
     }
   }
 }
 
-/* Deck de Botões de Ação com Posição e Slots Totalmente Fixos */
+/* Deck de Botões de Ação com Posição e Slots Totalmente Fixos (Aumentados) */
 .action-buttons-deck {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   padding-top: 10px;
   border-top: 2px solid #000;
   flex-shrink: 0;
@@ -292,11 +441,11 @@
     position: relative;
 
     &.slot-primary {
-      height: 52px;
+      height: 62px; // Aumentado para 62px (botões de ação grandes e táteis!)
     }
 
     &.slot-secondary {
-      height: 38px;
+      height: 44px; // Aumentado para 44px
     }
 
     button {
@@ -306,18 +455,21 @@
       line-height: 1;
       box-sizing: border-box;
       transition: transform 0.1s ease, filter 0.1s ease;
+      letter-spacing: 0.5px;
     }
   }
 }
 
-/* Modais Balatro */
+/* Modais Balatro com Desfoque de Fundo Suave */
 .balatro-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.88);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 1050;
   animation: fadeIn 0.15s ease;
 }

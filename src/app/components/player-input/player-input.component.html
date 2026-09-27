@@ -11,8 +11,7 @@
         <i class="fas fa-dice"></i>
       </div>
       <div>
-        <h1 class="logo-title font-pixel m-0">5 MIL!</h1>
-        <div class="logo-subtitle text-uppercase">ROGUELIKE DICE &bull; 2026 EDITION</div>
+        <h1 class="logo-title font-pixel m-0">5000</h1>
       </div>
     </div>
 
@@ -130,7 +129,7 @@
           <!-- Botão Principal Jogar -->
           <div class="text-center pt-2">
             <button class="btn-balatro btn-balatro-yellow w-100 py-3 fs-3" (click)="startGame()">
-              <i class="fas fa-play me-2"></i> INICIAR JOGO &bull; RUN
+              <i class="fas fa-play me-2"></i> INICIAR JOGO
             </button>
           </div>
         </div>
@@ -176,21 +175,21 @@
               </div>
             </div>
 
-            <!-- Avisos Balatro -->
-            <div class="balatro-card-light p-3 mt-4">
-              <div class="font-pixel fs-5 text-danger fw-bold mb-1">
-                <i class="fas fa-triangle-exclamation me-1"></i> MECÂNICAS CRÍTICAS:
+            <!-- Avisos Balatro / Mecânicas Críticas -->
+            <div class="lobby-crit-mechanics p-3 mt-4">
+              <div class="font-pixel fs-5 text-danger fw-bold mb-2 d-flex align-items-center gap-2">
+                <i class="fas fa-triangle-exclamation"></i> MECÂNICAS CRÍTICAS:
               </div>
-              <ul class="mb-0 ps-3 small text-dark fw-bold">
-                <li><strong>Mão Quente (Hot Dice):</strong> Ao pontuar todos os 5 dados, todos voltam para a mesa e você pode continuar acumulando!</li>
-                <li><strong>Entrada na Mesa:</strong> Para abrir seu placar pela 1ª vez, você precisa somar no mínimo <strong>500 pontos</strong> em uma única rodada.</li>
-                <li><strong>Física Tabletop:</strong> Você pode clicar nos dados com o mouse, segurar no ar, balançar e arremessar na mesa!</li>
+              <ul class="mb-0 ps-3 font-pixel text-light d-flex flex-column gap-2" style="font-size: 0.9rem;">
+                <li><strong class="text-warning">Mão Quente (Hot Dice):</strong> Ao pontuar todos os 5 dados, todos voltam para a mesa e você pode continuar acumulando!</li>
+                <li><strong class="text-warning">Entrada na Mesa:</strong> Para abrir seu placar pela 1ª vez, você precisa somar no mínimo <strong class="text-danger">500 pontos</strong> em uma única rodada.</li>
+                <li><strong class="text-warning">Física Tabletop:</strong> Você pode clicar nos dados com o mouse, marcar na mesa ou na barra inferior para pontuar!</li>
               </ul>
             </div>
           </div>
 
           <div class="text-center text-light font-pixel small mt-3">
-            5 MIL! &bull; O JOGO DE DADOS DEFINITIVO
+            5000
           </div>
         </div>
       </div>

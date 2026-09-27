@@ -2,125 +2,93 @@
 <div class="balatro-plasma-bg"></div>
 <div class="crt-overlay" *ngIf="crtFilterEnabled"></div>
 
-<div class="balatro-game-container min-vh-100 d-flex flex-column justify-content-between">
+<div class="balatro-game-container d-flex flex-column">
   
-  <!-- ================= TOP HUD: BALATRO STYLE ================= -->
-  <header class="balatro-hud px-3 py-2 px-md-4 d-flex justify-content-between align-items-center">
-    <!-- Brand -->
+  <!-- ================= TOP HUD (HEADER CENTRADO E LIMPO) ================= -->
+  <header class="balatro-hud px-3 py-2 px-md-4 d-flex justify-content-between align-items-center position-relative">
+    <!-- Brand Esquerda -->
     <div class="d-flex align-items-center gap-2 cursor-pointer" (click)="exitToLobby()" title="Sair para o Menu">
       <div class="balatro-chip chip-yellow fs-5">
         <i class="fas fa-dice"></i>
       </div>
       <div>
-        <h2 class="hud-brand font-pixel m-0">5 MIL!</h2>
-        <span class="hud-sub text-white-50">JOGO DOS 5000</span>
+        <h2 class="hud-brand font-pixel m-0">5000</h2>
       </div>
     </div>
 
-    <!-- Active Player Card -->
-    <div class="balatro-card-light px-3 py-1 d-flex align-items-center gap-3">
-      <div class="player-joker-badge">
-        <i class="fas" [ngClass]="players[currentPlayer] ? players[currentPlayer].avatar : 'fa-skull'"></i>
-      </div>
-      <div class="text-start">
-        <div class="text-uppercase small fw-bold text-dark font-pixel" style="font-size: 0.8rem;">TURNO DE</div>
-        <div class="player-turn-name font-pixel fs-4 text-dark">
-          {{ players[currentPlayer] ? players[currentPlayer].name : '' }}
+    <!-- Active Player Card (100% Centralizado na Janela) -->
+    <div class="hud-center-turn">
+      <div class="balatro-card-light px-3 py-2 d-flex align-items-center gap-3 active-turn-pill">
+        <div class="player-joker-badge">
+          <i class="fas" [ngClass]="players[currentPlayer] ? players[currentPlayer].avatar : 'fa-skull'"></i>
+        </div>
+        <div class="text-start">
+          <div class="text-uppercase small fw-bold text-dark font-pixel" style="font-size: 0.8rem; line-height: 1;">TURNO DE</div>
+          <div class="player-turn-name font-pixel fs-4 text-dark">
+            {{ players[currentPlayer] ? players[currentPlayer].name : '' }}
+          </div>
+        </div>
+        <div class="border-start border-2 border-dark ps-3 d-none d-sm-block">
+          <div class="small text-dark fw-bold font-pixel" style="font-size: 0.8rem; line-height: 1;">META</div>
+          <div class="fw-bold fs-5 text-dark font-pixel">{{ targetScore }} PTS</div>
         </div>
       </div>
-      <div class="border-start border-2 border-dark ps-3 d-none d-sm-block">
-        <div class="small text-dark fw-bold font-pixel" style="font-size: 0.8rem;">BLIND / META</div>
-        <div class="fw-bold fs-5 text-dark font-pixel">{{ targetScore }} PTS</div>
-      </div>
     </div>
 
-    <!-- Utility Controls (CRT, Audio, Rules, Exit) -->
+    <!-- Botão Único de Opções (Lado Direito) -->
     <div class="d-flex align-items-center gap-2">
-      <!-- Toggle CRT -->
       <button
-        class="btn-balatro btn-balatro-blue py-1 px-3 fs-6"
-        (click)="toggleCrt()"
-        [title]="'Filtro CRT: ' + (crtFilterEnabled ? 'LIGADO' : 'DESLIGADO')"
+        class="btn-balatro btn-balatro-blue py-2 px-3 fs-6 d-flex align-items-center gap-2"
+        (click)="showSettingsModal = true"
+        title="Abrir Opções"
       >
-        <i class="fas fa-tv me-1"></i> {{ crtFilterEnabled ? 'CRT: ON' : 'CRT: OFF' }}
-      </button>
-
-      <!-- Toggle Pixel Art Filter -->
-      <button
-        class="btn-balatro btn-balatro-purple py-1 px-3 fs-6"
-        (click)="togglePixel()"
-        [title]="'Filtro Pixel: ' + (pixelFilterEnabled ? 'LIGADO' : 'DESLIGADO')"
-      >
-        <i class="fas fa-cubes me-1"></i> {{ pixelFilterEnabled ? 'PIXEL: ON' : 'PIXEL: OFF' }}
-      </button>
-
-      <!-- Toggle Sound -->
-      <button
-        class="btn-balatro btn-balatro-yellow py-1 px-3 fs-6"
-        (click)="soundService.toggleMute()"
-        [title]="soundService.muted ? 'Ativar Som' : 'Silenciar'"
-      >
-        <i class="fas" [ngClass]="soundService.muted ? 'fa-volume-xmark text-danger' : 'fa-volume-high'"></i>
-      </button>
-
-      <!-- Rules Guide -->
-      <button
-        class="btn-balatro btn-balatro-green py-1 px-3 fs-6"
-        (click)="showRulesModal = true"
-        title="Tabela de Combinações"
-      >
-        <i class="fas fa-book-open me-1"></i> REGRAS
-      </button>
-
-      <!-- Exit Button -->
-      <button
-        class="btn-balatro btn-balatro-red py-1 px-3 fs-6"
-        (click)="exitToLobby()"
-        title="Menu Inicial"
-      >
-        <i class="fas fa-arrow-right-from-bracket"></i>
+        <i class="fas fa-sliders fs-5"></i>
+        <span class="font-pixel fs-5">OPÇÕES</span>
       </button>
     </div>
   </header>
 
   <!-- ================= ÁREA DE JOGO PRINCIPAL ================= -->
-  <main class="container-fluid flex-grow-1 p-2 p-md-3">
-    <div class="row h-100 g-3">
+  <main class="container-fluid flex-grow-1 p-2 p-md-3 game-main-stage">
+    <div class="row h-100 g-3 game-main-row">
 
-      <!-- ================= COLUNA ESQUERDA: PLACAR DOS JOGADORES ================= -->
-      <div class="col-12 col-lg-3 col-xl-2 order-2 order-lg-1">
-        <div class="balatro-card p-3 h-100 d-flex flex-column justify-content-between">
-          <div>
-            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-dark">
+      <!-- ================= COLUNA ESQUERDA: PLACAR DOS JOGADORES (EXPANDIDO PARA NÃO QUEBRAR LINHAS) ================= -->
+      <div class="col-12 col-lg-3 col-xl-3 order-2 order-lg-1 game-col-left">
+        <div class="balatro-card p-3 h-100 d-flex flex-column justify-content-between placard-card">
+          <div class="d-flex flex-column flex-grow-1 min-h-0">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-dark flex-shrink-0">
               <h3 class="font-pixel fs-5 text-warning m-0">
                 <i class="fas fa-trophy me-1"></i> PLACAR
               </h3>
               <span class="balatro-chip chip-yellow py-0 px-2 fs-6">{{ players.length }}P</span>
             </div>
 
-            <!-- Lista de Cartas de Jogador com Alto Contraste -->
-            <div class="d-flex flex-column gap-2">
+            <!-- Lista de Cartas de Jogador com Preenchimento Total e Sem Quebra de Linhas -->
+            <div class="players-score-list">
               <div
                 *ngFor="let player of players; let i = index"
                 class="balatro-player-tab p-2 rounded-2"
                 [class.active-player-card]="currentPlayer === i"
               >
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="joker-tab-icon">
+                  <div class="d-flex align-items-center gap-2 min-w-0">
+                    <span class="joker-tab-icon flex-shrink-0">
                       <i class="fas" [ngClass]="player.avatar"></i>
                     </span>
-                    <span class="fw-bold player-tab-name text-white text-truncate" style="max-width: 105px;">
+                    <span class="fw-bold player-tab-name text-white text-truncate">
                       {{ player.name }}
                     </span>
                   </div>
-                  <span class="font-pixel fs-4" [class.text-warning]="currentPlayer === i" [class.text-white]="currentPlayer !== i">
-                    {{ scores[i] }}
-                  </span>
+                  <div class="d-flex align-items-baseline gap-1 flex-shrink-0 ms-2 text-nowrap">
+                    <span class="font-pixel fs-4 fw-bold" [class.text-warning]="currentPlayer === i" [class.text-white]="currentPlayer !== i">
+                      {{ scores[i] }}
+                    </span>
+                    <span class="font-pixel small text-white-50">PTS</span>
+                  </div>
                 </div>
 
                 <!-- Barra de Progresso até a Meta -->
-                <div class="progress balatro-progress" style="height: 6px;">
+                <div class="progress balatro-progress my-1" style="height: 6px;">
                   <div
                     class="progress-bar"
                     [style.width.%]="(scores[i] / targetScore) * 100"
@@ -129,28 +97,30 @@
                   ></div>
                 </div>
 
-                <!-- Status com Alto Contraste -->
-                <div class="d-flex justify-content-between align-items-center mt-1 font-pixel" style="font-size: 0.85rem;">
-                  <span *ngIf="scores[i] === 0" class="text-danger fw-bold">
+                <!-- Status com Alto Contraste em Linha Única sem quebra -->
+                <div class="d-flex justify-content-between align-items-center mt-1 font-pixel text-nowrap" style="font-size: 0.85rem;">
+                  <span *ngIf="scores[i] === 0" class="text-danger fw-bold text-nowrap">
                     <i class="fas fa-lock me-1"></i> &lt; 500 PTS
                   </span>
-                  <span *ngIf="scores[i] > 0" class="text-success fw-bold">
+                  <span *ngIf="scores[i] > 0" class="text-success fw-bold text-nowrap">
                     <i class="fas fa-check me-1"></i> NA MESA
                   </span>
-                  <span class="text-light fw-bold">FALTAM {{ targetScore - scores[i] }}</span>
+                  <span class="text-light fw-bold text-nowrap">
+                    FALTAM {{ targetScore - scores[i] }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="text-center pt-2 font-pixel text-light small border-top border-dark">
-            TARGET: <strong class="text-warning">{{ targetScore }} PTS</strong>
+          <div class="text-center pt-2 font-pixel text-light small border-top border-dark flex-shrink-0 mt-2">
+            META: <strong class="text-warning">{{ targetScore }} PONTOS</strong>
           </div>
         </div>
       </div>
 
       <!-- ================= COLUNA CENTRAL: MESA 3D TABLETOP (TOP-DOWN) ================= -->
-      <div class="col-12 col-lg-6 col-xl-7 order-1 order-lg-2 d-flex flex-column">
+      <div class="col-12 col-lg-6 col-xl-6 order-1 order-lg-2 d-flex flex-column game-col-center">
         <div class="tabletop-stage flex-grow-1 position-relative">
           
           <!-- Banner Pop Balatro (Zilch, Hot Dice, Warnings) -->
@@ -217,25 +187,27 @@
       </div>
 
       <!-- ================= COLUNA DIREITA: SCORE DA RODADA & AÇÕES ================= -->
-      <div class="col-12 col-lg-3 col-xl-3 order-3 order-lg-3">
+      <div class="col-12 col-lg-3 col-xl-3 order-3 order-lg-3 game-col-right">
         <div class="balatro-card p-3 p-md-3 h-100 right-action-panel">
           
-          <div class="d-flex flex-column gap-2 info-cards-stack">
-            <!-- Pontuação da Rodada Estilo Balatro Chips/Score -->
-            <div class="balatro-card-light p-3 text-center round-score-box">
+          <div class="d-flex flex-column gap-2 info-cards-stack flex-grow-1 min-h-0">
+            <!-- Pontuação da Rodada Estilo Balatro Chips/Score (Fundo Chamativo Arcade) -->
+            <div class="round-score-box text-center">
               <span class="balatro-chip chip-yellow py-0 px-2 small mb-1">TOTAL DA RODADA</span>
-              <div class="round-huge-score font-pixel text-danger">
+              <div class="round-huge-score font-pixel">
                 {{ totalPotentialScore }}
               </div>
-              <div class="font-pixel text-dark fw-bold fs-6">
+              <div class="round-score-sub font-pixel fw-bold">
                 {{ roundAccumulatedScore }} FIXOS + {{ isSelectionValid ? currentSelectionScore : 0 }} SELECIONADOS
               </div>
             </div>
 
-            <!-- Combinações Selecionadas com Altura Fixa Rígida (Sem Layout Shift) -->
-            <div class="balatro-card p-3 combos-box">
-              <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-1 mb-2">
-                <span class="font-pixel fs-5 text-warning">COMBINAÇÕES:</span>
+            <!-- Combinações Selecionadas com Altura Balanceada e Visualização Completa -->
+            <div class="balatro-card combos-box">
+              <div class="combos-header d-flex justify-content-between align-items-center border-bottom border-dark pb-1 mb-2 flex-shrink-0">
+                <span class="font-pixel fs-6 text-warning fw-bold text-uppercase">
+                  <i class="fas fa-layer-group me-1"></i> COMBINAÇÕES:
+                </span>
                 <span class="balatro-chip" [ngClass]="isSelectionValid ? 'chip-green' : 'chip-red'">
                   {{ isSelectionValid ? '+' + currentSelectionScore + ' PTS' : 'INVÁLIDO' }}
                 </span>
@@ -243,20 +215,20 @@
 
               <div class="fixed-combos-list">
                 <div *ngIf="selectionBreakdown.length > 0" class="d-flex flex-column gap-1">
-                  <div *ngFor="let combo of selectionBreakdown" class="font-pixel fs-5 text-white d-flex align-items-center gap-1 text-truncate">
+                  <div *ngFor="let combo of selectionBreakdown" class="font-pixel combo-item text-white d-flex align-items-center gap-1 text-truncate">
                     <i class="fas fa-caret-right text-warning"></i> {{ combo }}
                   </div>
                 </div>
-                <div *ngIf="selectionBreakdown.length === 0" class="text-light fw-bold font-pixel small py-1 text-center">
+                <div *ngIf="selectionBreakdown.length === 0" class="empty-combos-msg text-light fw-bold font-pixel text-center">
                   {{ isRolling ? 'Aguardando parada dos dados...' : 'Clique nos dados para marcar.' }}
                 </div>
               </div>
             </div>
 
-            <!-- Dados Guardados (Locked) com Altura Fixa Rígida -->
-            <div class="balatro-card p-3 locked-box">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="font-pixel fs-5 text-warning">
+            <!-- Dados Guardados (Locked) com Espaço Amplo para não quebrar -->
+            <div class="balatro-card locked-box">
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
+                <span class="font-pixel fs-6 text-warning fw-bold text-uppercase">
                   <i class="fas fa-lock me-1"></i> GUARDADOS
                 </span>
                 <span class="balatro-chip chip-blue py-0 px-2 fs-6">
@@ -279,39 +251,39 @@
             </div>
           </div>
 
-          <!-- BOTÕES DE AÇÃO BALATRO COM SLOTS TOTALMENTE FIXOS (NUNCA MUDAM DE LUGAR) -->
+          <!-- BOTÕES DE AÇÃO BALATRO (MAIORES E CHUNKY) -->
           <div class="action-buttons-deck">
             
-            <!-- Slot 1: Lançar / Arremessar Dados (Altura Fixa: 52px) -->
+            <!-- Slot 1: Lançar / Arremessar Dados (Altura: 62px) -->
             <div class="action-btn-slot slot-primary">
               <button
-                class="btn-balatro btn-balatro-yellow fs-5 w-100 h-100"
+                class="btn-balatro btn-balatro-yellow fs-4 w-100 h-100"
                 [disabled]="isRolling || (!isDiceFloating && hasRolledThisTurn && !canRollAgain)"
                 (click)="rollDice()"
               >
-                <i class="fas fa-dice fs-4 me-2" [class.fa-spin]="isRolling"></i>
+                <i class="fas fa-dice fs-3 me-2" [class.fa-spin]="isRolling"></i>
                 <span>
                   {{ isDiceFloating ? ('LANÇAR ' + remainingDiceCount + ' DADOS') : ('ARREMESSAR + ' + (remainingDiceCount - selectedIndices.length) + ' DADOS') }}
                 </span>
               </button>
             </div>
 
-            <!-- Slot 2: Bancar / Garantir Pontos (Altura Fixa: 52px) -->
+            <!-- Slot 2: Bancar / Garantir Pontos (Altura: 62px) -->
             <div class="action-btn-slot slot-primary">
               <button
-                class="btn-balatro btn-balatro-green fs-5 w-100 h-100"
+                class="btn-balatro btn-balatro-green fs-4 w-100 h-100"
                 [disabled]="isRolling || !canBankScore"
                 (click)="bankScore()"
               >
-                <i class="fas fa-check-double fs-4 me-2"></i>
+                <i class="fas fa-check-double fs-3 me-2"></i>
                 <span>GARANTIR +{{ totalPotentialScore }} PTS</span>
               </button>
             </div>
 
-            <!-- Slot 3: Desistir da rodada caso < 500 pts (Slot Reservado Fixo de 38px: NUNCA desloca os botões acima) -->
+            <!-- Slot 3: Desistir da rodada caso < 500 pts (Altura: 44px) -->
             <div class="action-btn-slot slot-secondary">
               <button
-                class="btn-balatro btn-balatro-red fs-6 w-100 h-100"
+                class="btn-balatro btn-balatro-red fs-5 w-100 h-100"
                 [style.visibility]="(isFirstTimeScoring && hasRolledThisTurn && totalPotentialScore < 500 && !isRolling) ? 'visible' : 'hidden'"
                 [attr.aria-hidden]="!(isFirstTimeScoring && hasRolledThisTurn && totalPotentialScore < 500 && !isRolling)"
                 (click)="forfeitTurn()"
@@ -361,7 +333,7 @@
     <div class="balatro-card p-4" style="max-width: 680px; width: 100%;">
       <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-2 mb-3">
         <h3 class="font-pixel fs-3 text-warning m-0">
-          <i class="fas fa-book-open me-2"></i> GUIA DE REGRAS: 5 MIL!
+          <i class="fas fa-book-open me-2"></i> GUIA DE REGRAS: 5000
         </h3>
         <button class="btn-balatro btn-balatro-red py-1 px-3 fs-6" (click)="showRulesModal = false">
           FECHAR
@@ -375,34 +347,34 @@
         </p>
 
         <h4 class="font-pixel fs-5 text-white mt-3">COMBINAÇÕES DE PONTOS:</h4>
-        <div class="balatro-card-light p-3 text-dark font-pixel fs-5">
-          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+        <div class="settings-row-card p-3 text-white font-pixel fs-5">
+          <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
             <span>DADO 1 (ÁS AVULSO)</span>
             <span class="text-danger fw-bold">+100 PTS CADA</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+          <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
             <span>DADO 5 (CINCO AVULSO)</span>
             <span class="text-primary fw-bold">+50 PTS CADA</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+          <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
             <span>SEQUÊNCIA (1-5 OU 2-6)</span>
             <span class="text-success fw-bold">+750 PTS</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+          <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
             <span>TRINCA DE 1S (1-1-1)</span>
             <span class="text-danger fw-bold">+1.000 PTS</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+          <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
             <span>TRINCA DE 2, 3, 4, 5, 6</span>
-            <span class="fw-bold">NÚMERO x 100</span>
+            <span class="text-warning fw-bold">NÚMERO x 100</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom border-dark">
+          <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
             <span>QUÁDRUPLA (4 IGUAIS)</span>
-            <span class="fw-bold">DOBRO DA TRINCA</span>
+            <span class="text-warning fw-bold">DOBRO DA TRINCA</span>
           </div>
           <div class="d-flex justify-content-between py-1">
             <span>QUÍNTUPLA (5 IGUAIS)</span>
-            <span class="fw-bold">10x A TRINCA</span>
+            <span class="text-warning fw-bold">10x A TRINCA</span>
           </div>
         </div>
 
@@ -417,6 +389,95 @@
       <div class="text-end pt-3 border-top border-dark mt-3">
         <button class="btn-balatro btn-balatro-yellow px-4 fs-5" (click)="showRulesModal = false">
           ENTENDIDO!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL DE CONFIGURAÇÕES & OPÇÕES COM BLUR ================= -->
+  <div class="balatro-modal-backdrop d-flex align-items-center justify-content-center p-3" *ngIf="showSettingsModal">
+    <div class="balatro-card p-4 text-center settings-modal-card" style="max-width: 500px; width: 100%;">
+      <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-2 mb-3">
+        <h3 class="font-pixel fs-3 text-warning m-0">
+          <i class="fas fa-sliders me-2"></i> OPÇÕES DO JOGO
+        </h3>
+        <button class="btn-balatro btn-balatro-red py-1 px-3 fs-6" (click)="showSettingsModal = false">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="d-flex flex-column gap-3 py-2">
+        <!-- Toggle Filtro CRT -->
+        <div class="d-flex justify-content-between align-items-center settings-row-card p-3">
+          <div class="text-start">
+            <div class="font-pixel setting-title">
+              <i class="fas fa-tv me-2 text-primary"></i> FILTRO CRT
+            </div>
+            <div class="setting-subtitle font-pixel">Linhas de varredura retrô</div>
+          </div>
+          <button
+            class="btn-balatro toggle-btn-fixed"
+            [ngClass]="crtFilterEnabled ? 'btn-balatro-green' : 'btn-balatro-red'"
+            (click)="toggleCrt()"
+            [title]="crtFilterEnabled ? 'Desligar Filtro CRT' : 'Ligar Filtro CRT'"
+          >
+            <i class="fas" [ngClass]="crtFilterEnabled ? 'fa-check' : 'fa-xmark'"></i>
+            <span>{{ crtFilterEnabled ? 'ON' : 'OFF' }}</span>
+          </button>
+        </div>
+
+        <!-- Toggle Filtro Pixel Art -->
+        <div class="d-flex justify-content-between align-items-center settings-row-card p-3">
+          <div class="text-start">
+            <div class="font-pixel setting-title">
+              <i class="fas fa-cubes me-2 text-info"></i> FILTRO PIXEL
+            </div>
+            <div class="setting-subtitle font-pixel">Textura pixelada nos dados 3D</div>
+          </div>
+          <button
+            class="btn-balatro toggle-btn-fixed"
+            [ngClass]="pixelFilterEnabled ? 'btn-balatro-green' : 'btn-balatro-red'"
+            (click)="togglePixel()"
+            [title]="pixelFilterEnabled ? 'Desligar Filtro Pixel' : 'Ligar Filtro Pixel'"
+          >
+            <i class="fas" [ngClass]="pixelFilterEnabled ? 'fa-check' : 'fa-xmark'"></i>
+            <span>{{ pixelFilterEnabled ? 'ON' : 'OFF' }}</span>
+          </button>
+        </div>
+
+        <!-- Toggle Áudio / Som -->
+        <div class="d-flex justify-content-between align-items-center settings-row-card p-3">
+          <div class="text-start">
+            <div class="font-pixel setting-title">
+              <i class="fas fa-volume-high me-2 text-warning"></i> EFEITOS SONOROS
+            </div>
+            <div class="setting-subtitle font-pixel">Áudio dos dados e cliques</div>
+          </div>
+          <button
+            class="btn-balatro toggle-btn-fixed"
+            [ngClass]="!soundService.muted ? 'btn-balatro-green' : 'btn-balatro-red'"
+            (click)="soundService.toggleMute()"
+            [title]="soundService.muted ? 'Ativar Áudio' : 'Mutar Áudio'"
+          >
+            <i class="fas" [ngClass]="!soundService.muted ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
+            <span>{{ !soundService.muted ? 'ON' : 'OFF' }}</span>
+          </button>
+        </div>
+
+        <!-- Abrir Regras -->
+        <button
+          class="btn-balatro btn-balatro-yellow py-3 fs-4 w-100"
+          (click)="showSettingsModal = false; showRulesModal = true"
+        >
+          <i class="fas fa-book-open me-2"></i> GUIA DE REGRAS & PONTOS
+        </button>
+
+        <!-- Sair para o Menu Inicial -->
+        <button
+          class="btn-balatro btn-balatro-red py-2 fs-5 w-100 mt-2"
+          (click)="showSettingsModal = false; exitToLobby()"
+        >
+          <i class="fas fa-arrow-right-from-bracket me-2"></i> SAIR PARA O MENU
         </button>
       </div>
     </div>

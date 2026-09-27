@@ -1,8 +1,11 @@
 .logo-title {
-  font-size: 2.2rem;
+  font-family: var(--font-numbers);
+  font-size: 2.4rem;
+  font-weight: 800;
   color: var(--balatro-yellow);
   text-shadow: 3px 3px 0 #000;
   line-height: 1;
+  letter-spacing: 2px;
 }
 
 .logo-subtitle {
@@ -34,6 +37,24 @@
   &.active-target {
     background: var(--balatro-blue);
     color: #fff;
+  }
+}
+
+.players-deck {
+  height: 250px;
+  min-height: 250px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--balatro-yellow) #111;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--balatro-yellow);
+    border-radius: 2px;
   }
 }
 
@@ -80,6 +101,22 @@
 }
 
 .deck-rules-list {
-  font-family: var(--font-modern);
+  font-family: var(--font-pixel);
   font-size: 1rem;
+}
+
+.lobby-crit-mechanics {
+  background: #090e15;
+  border: 2px solid rgba(254, 74, 73, 0.4);
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 #000;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--balatro-red);
+  }
+
+  li {
+    line-height: 1.45;
+  }
 }

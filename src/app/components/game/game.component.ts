@@ -54,6 +54,7 @@ export class GameComponent implements OnInit, AfterViewInit {
   bannerNotice: BalatroBanner | null = null;
   winner: { name: string; avatar: string; score: number } | null = null;
   showRulesModal = false;
+  showSettingsModal = false;
 
   constructor(
     private diceService: DiceService,
@@ -241,11 +242,21 @@ export class GameComponent implements OnInit, AfterViewInit {
     this.isRolling = false;
     this.hasRolledThisTurn = true;
 
-    // Revela os números reais físicos lidos das faces superiores da mesa 3D
+    // Revela os números reais físicos lidos das faces superiores da mesa 3D (já ordenados pela vitrine 3D)
     if (physicalRoll && physicalRoll.length > 0) {
       this.currentRoll = [...physicalRoll];
     } else {
-      this.currentRoll = this.diceService.roll(this.remainingDiceCount);
+      const raw = this.diceService.roll(this.remainingDiceCount);
+      const scoring = this.gameService.getScoringDiceIndices(raw);
+      const sc: number[] = [];
+      const non: number[] = [];
+      raw.forEach((v, i) => {
+        if (scoring.includes(i)) sc.push(v);
+        else non.push(v);
+      });
+      sc.sort((a, b) => a - b);
+      non.sort((a, b) => a - b);
+      this.currentRoll = [...sc, ...non];
     }
 
     const hasPoints = this.gameService.hasAnyScoringCombination(this.currentRoll);
